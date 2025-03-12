@@ -132,7 +132,7 @@ func init() {
 	removeFilesInit()
 	removeFoldersInit()
 	indexInit()
-	rootCmd.AddCommand(clearpathCmd, removeFilesCmd, removeFoldersCmd, indexCmd)
+	rootCmd.AddCommand(rootCmd, clearpathCmd, removeFilesCmd, removeFoldersCmd, indexCmd)
 }
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
