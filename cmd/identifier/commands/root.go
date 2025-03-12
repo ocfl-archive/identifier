@@ -127,6 +127,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLogfile, "log-file", "", "log output file (default is console)")
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLoglevel, "log-level", "", "log level (CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)")
 
+	rootInit()
 	clearpathInit()
 	removeFilesInit()
 	removeFoldersInit()
