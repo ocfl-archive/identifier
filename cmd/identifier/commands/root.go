@@ -47,9 +47,6 @@ var logger zLogger.ZLogger
 
 var showConfig bool
 
-func rootInit() {
-	indexCmd.Flags().BoolVar(&showConfig, "show-config", false, "show configuration")
-}
 func initConfig() {
 	var data = []byte{}
 	// load config file
@@ -126,13 +123,13 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&persistentFlagConfigFile, "config", "", "config file (default is embedded)")
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLogfile, "log-file", "", "log output file (default is console)")
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLoglevel, "log-level", "", "log level (CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)")
+	rootCmd.Flags().BoolVar(&showConfig, "show-config", false, "show configuration")
 
-	rootInit()
 	clearpathInit()
 	removeFilesInit()
 	removeFoldersInit()
 	indexInit()
-	rootCmd.AddCommand(rootCmd, clearpathCmd, removeFilesCmd, removeFoldersCmd, indexCmd)
+	rootCmd.AddCommand(clearpathCmd, removeFilesCmd, removeFoldersCmd, indexCmd)
 }
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
