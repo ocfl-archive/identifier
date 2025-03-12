@@ -101,7 +101,11 @@ func doIndex(cmd *cobra.Command, args []string) {
 			cobra.CheckErr(errors.Errorf("'%s' is not a directory", dataPath))
 		}
 	}
-
+	if dataPath == "" && dbFolderFlag == "" {
+		logger.Error().Msg("either data path or database folder must be set")
+		defer os.Exit(1)
+		return
+	}
 	if removeFlag && !(emptyFlag || duplicateFlag || regexpFlag != "") {
 		logger.Error().Msg("remove flag requires at least one of empty, duplicate or regexp flag")
 		defer os.Exit(1)
