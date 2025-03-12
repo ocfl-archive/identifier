@@ -16,10 +16,10 @@ var foldersRegexpFlag string
 var foldersCmd = &cobra.Command{
 	Use:     "folders [path to data]",
 	Aliases: []string{},
-	Short:   "removes folders including files and subfolders based on go regular expression",
-	Long: `removes folders including files and subfolders based on go regular expression (https://pkg.go.dev/regexp/syntax)
-If there are multiple folders in one hierarchy matching the regular expression, only the first one with lowest depth will be listed 
-or removed, which inherently includes the rest.
+	Short:   "list folders including files and subfolders based on go regular expression (with remove option)",
+	Long: `list folders including files and subfolders based on go regular expression (https://pkg.go.dev/regexp/syntax)
+If there are multiple folders in one hierarchy matching the regular expression, only the first one with lowest depth will be listed, which inherently includes the rest.
+There is an option to remove the folders including files and subfolders from filesystem.
 
 Caveat: dry-run (no --remove flag) is always recommended before removing files from filesystem.
 `,

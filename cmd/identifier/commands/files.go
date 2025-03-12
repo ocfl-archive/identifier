@@ -16,8 +16,9 @@ var filesRegexpFlag string
 var filesCmd = &cobra.Command{
 	Use:     "files [path to data]",
 	Aliases: []string{},
-	Short:   "removes files based on go regular expression",
-	Long: `removes files based on go regular expression (https://pkg.go.dev/regexp/syntax)
+	Short:   "list files based on go regular expression (with remove option)",
+	Long: `list files based on go regular expression (https://pkg.go.dev/regexp/syntax)
+There is an option to remove the files from filesystem.
 
 Caveat: dry-run (no --remove flag) is always recommended before removing files from filesystem.
 `,
