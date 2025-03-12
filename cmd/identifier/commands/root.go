@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"emperror.dev/errors"
 	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/je4/identifier/config"
 	"github.com/je4/identifier/identifier"
 	"github.com/je4/identifier/version"
@@ -28,7 +29,11 @@ source code is available at: https://github.com/je4/identifier
 by Jürgen Enge (University Library Basel, juergen@info-age.net)`,
 	Version: fmt.Sprintf("%s '%s' (%s)", version.Version, version.ShortCommit(), version.Date),
 	Run: func(cmd *cobra.Command, args []string) {
-		_ = cmd.Help()
+		if showConfig {
+			toml.NewEncoder(os.Stdout).Encode(conf)
+		} else {
+			_ = cmd.Help()
+		}
 	},
 }
 
@@ -40,6 +45,11 @@ var persistentFlagLoglevel string
 var conf *config.Config
 var logger zLogger.ZLogger
 
+var showConfig bool
+
+func rootInit() {
+	indexCmd.Flags().BoolVar(&showConfig, "show-config", false, "show configuration")
+}
 func initConfig() {
 	var data = []byte{}
 	// load config file
