@@ -123,13 +123,13 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&persistentFlagConfigFile, "config", "", "config file (default is embedded)")
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLogfile, "log-file", "", "log output file (default is console)")
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLoglevel, "log-level", "", "log level (CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)")
-	rootCmd.Flags().BoolVar(&showConfig, "show-config", false, "show configuration")
+	rootCmd.Flags().BoolVar(&showConfig, "show-config", false, "show configuration file")
 
 	clearpathInit()
-	removeFilesInit()
-	removeFoldersInit()
+	filesInit()
+	foldersInit()
 	indexInit()
-	rootCmd.AddCommand(clearpathCmd, removeFilesCmd, removeFoldersCmd, indexCmd)
+	rootCmd.AddCommand(clearpathCmd, filesCmd, foldersCmd, indexCmd)
 }
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
