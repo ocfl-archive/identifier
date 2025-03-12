@@ -92,10 +92,14 @@ func indexInit() {
 }
 
 func doIndex(cmd *cobra.Command, args []string) {
-	dataPath, err := identifier.Fullpath(args[0])
-	cobra.CheckErr(err)
-	if fi, err := os.Stat(dataPath); err != nil || !fi.IsDir() {
-		cobra.CheckErr(errors.Errorf("'%s' is not a directory", dataPath))
+	var dataPath string
+	var err error
+	if len(args) > 0 {
+		dataPath, err = identifier.Fullpath(args[0])
+		cobra.CheckErr(err)
+		if fi, err := os.Stat(dataPath); err != nil || !fi.IsDir() {
+			cobra.CheckErr(errors.Errorf("'%s' is not a directory", dataPath))
+		}
 	}
 
 	if removeFlag && !(emptyFlag || duplicateFlag || regexpFlag != "") {
