@@ -99,29 +99,52 @@ func build(fname string, utfEncode bool) string {
 	return fname
 }
 
-func NewPathElement(name string, dir bool, parent *pathElement) *pathElement {
-	return &pathElement{name: name, dir: dir, parent: parent, subs: []*pathElement{}}
+func NewPathElement(name string, dir bool, size int64, parent *pathElement) *pathElement {
+	return &pathElement{name: name, dir: dir, size: size, parent: parent, subs: []*pathElement{}}
 }
 
 type pathElement struct {
-	name      string
-	clearName string
-	dir       bool
-	subs      []*pathElement
-	parent    *pathElement
+	name                    string
+	clearName               string
+	dir                     bool
+	size                    int64
+	subs                    []*pathElement
+	parent                  *pathElement
+	subFolderHierarchyCount int64
 }
 
-func (p *pathElement) AddSub(name string, dir bool) *pathElement {
+func (p *pathElement) AddSub(name string, dir bool, size int64) *pathElement {
 	for _, sub := range p.subs {
 		if sub.name == name {
 			return sub
 		}
 	}
-	sub := NewPathElement(name, dir, p)
+	sub := NewPathElement(name, dir, size, p)
 	p.subs = append(p.subs, sub)
 	return sub
 }
 
+func (p *pathElement) SubFolderHierarchyAggregation() (size int64, fileCount int64, folderCount int64) {
+	if !p.dir {
+		return p.size, 1, 0
+	}
+	folderCount = 1
+	for _, sub := range p.subs {
+		subSize, subFile, subFolder := sub.SubFolderHierarchyAggregation()
+		size += subSize
+		fileCount += subFile
+		folderCount += subFolder
+	}
+	//fmt.Printf("folder %s: size=%d, fileCount=%d, folderCount=%d\n", p.String(), size, fileCount, folderCount)
+	return
+}
+func (p *pathElement) IsDir() bool {
+	return p.dir
+}
+
+func (p *pathElement) Size() int64 {
+	return p.size
+}
 func (p *pathElement) String() string {
 	if p.parent == nil {
 		return p.name
@@ -166,6 +189,15 @@ func (p *pathElement) ClearIterator(yield func(string, string) bool) {
 	}
 }
 
+func (p *pathElement) ElementIterator(yield func(element *pathElement) bool) {
+	for _, sub := range p.subs {
+		sub.ElementIterator(yield)
+	}
+	if !yield(p) {
+		return
+	}
+}
+
 func (p *pathElement) PathIterator(yield func(string) bool) {
 	for _, sub := range p.subs {
 		sub.PathIterator(yield)
@@ -205,7 +237,7 @@ func (p *pathElement) FindDirname(re *regexp.Regexp) func(func(string) bool) {
 }
 
 func BuildPath(fsys fs.FS) (*pathElement, error) {
-	root := NewPathElement("", true, nil)
+	root := NewPathElement("", true, 0, nil)
 	if err := fs.WalkDir(fsys, ".", func(pathStr string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return errors.Wrapf(err, "cannot walk %s/%s", fsys, pathStr)
@@ -217,7 +249,11 @@ func BuildPath(fsys fs.FS) (*pathElement, error) {
 			if pathPart == "." || pathPart == "" {
 				continue
 			}
-			curr = curr.AddSub(pathPart, d.IsDir())
+			var size int64
+			if fi, err := d.Info(); err != nil {
+				size = fi.Size()
+			}
+			curr = curr.AddSub(pathPart, d.IsDir(), size)
 		}
 		if d.IsDir() {
 			//fmt.Printf("[d] %s/%s\n", fsys, pathStr)

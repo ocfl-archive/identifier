@@ -15,8 +15,10 @@ import (
 	"github.com/spf13/cobra"
 	ublogger "gitlab.switch.ch/ub-unibas/go-ublogger/v2"
 	"go.ub.unibas.ch/cloud/certloader/v2/pkg/loader"
+	"golang.org/x/exp/slices"
 	"io"
 	"os"
+	"strings"
 )
 
 var appname = "identifier"
@@ -50,6 +52,13 @@ var showConfig bool
 func initConfig() {
 	var data = []byte{}
 	// load config file
+	if persistentFlagLoglevel != "" {
+		if !slices.Contains([]string{"ERROR", "WARN", "INFO", "DEBUG"}, strings.ToUpper(persistentFlagLoglevel)) {
+			log.Error().Msgf("log level '%s' not valid. please use \"ERROR\", \"WARN\", \"INFO\" or \"DEBUG\"", persistentFlagLoglevel)
+			defer os.Exit(1)
+			return
+		}
+	}
 	if persistentFlagConfigFile != "" {
 		var err error
 		persistentFlagConfigFile, err = identifier.Fullpath(persistentFlagConfigFile)
@@ -120,9 +129,9 @@ func init() {
 
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&persistentFlagConfigFile, "config", "", "config file (default is embedded)")
+	rootCmd.PersistentFlags().StringVar(&persistentFlagConfigFile, "config", "", "config file (default is internal)")
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLogfile, "log-file", "", "log output file (default is console)")
-	rootCmd.PersistentFlags().StringVar(&persistentFlagLoglevel, "log-level", "", "log level (CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)")
+	rootCmd.PersistentFlags().StringVar(&persistentFlagLoglevel, "log-level", "WARN", "log level (ERROR|WARN|INFO|DEBUG)")
 	rootCmd.Flags().BoolVar(&showConfig, "show-config", false, "show configuration file")
 
 	clearpathInit()

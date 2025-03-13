@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dgraph-io/badger/v4"
+	human "github.com/dustin/go-humanize"
 	"github.com/je4/utils/v2/pkg/checksum"
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/indexer/v3/pkg/indexer"
@@ -107,7 +108,18 @@ func CsvWriteLine(csvWriter *csv.Writer, fData *FileData) error {
 		}))
 }
 
-func WriteConsole(logger zLogger.ZLogger, fData *FileData, id uint, basePath string, cached bool) {
+func WriteLogger(logger zLogger.ZLogger, fData *FileData, id uint, basePath string, cached bool) {
+	logger.Info().
+		Bool("cached", cached).
+		Str("path", fData.Path).
+		Str("mimetype", fData.Indexer.Mimetype).
+		Str("pronom", fData.Indexer.Pronom).
+		Str("checksum", fData.Indexer.Checksum[string(checksum.DigestSHA512)]).
+		Int64("size", fData.Size).
+		Str("size_human", human.Bytes(uint64(fData.Size))). // human-readable size
+		Time("lastmod", time.Unix(fData.LastMod, 0)).
+		Time("lastseen", time.Unix(fData.LastSeen, 0)).Msg("")
+
 	var cachedStr string
 	if cached {
 		cachedStr = " [cached]"
@@ -117,6 +129,13 @@ func WriteConsole(logger zLogger.ZLogger, fData *FileData, id uint, basePath str
 	logger.Debug().Msgf("#%03d:%s %s\n           [%s] - %s\n", id, cachedStr, p, fData.Indexer.Mimetype, fData.Indexer.Checksum[string(checksum.DigestSHA512)])
 	if fData.Indexer.Type == "image" && fData.Indexer.Width > 0 {
 		logger.Debug().Msgf("#           image: %vx%v\n", fData.Indexer.Width, fData.Indexer.Height)
+	}
+}
+
+func WriteConsole(logger zLogger.ZLogger, fData *FileData) {
+	fmt.Printf("'%s' - %s\n           [%s - %s] %s\n", fData.Path, fData.Indexer.Checksum[string(checksum.DigestSHA512)], fData.Indexer.Pronom, fData.Indexer.Mimetype, human.Bytes(uint64(fData.Size)))
+	if fData.Indexer.Type == "image" && fData.Indexer.Width > 0 {
+		fmt.Printf("#           image: %vx%v\n", fData.Indexer.Width, fData.Indexer.Height)
 	}
 }
 
@@ -174,7 +193,7 @@ func Worker(id uint, fsys fs.FS, actions []string, idx *util.Indexer, logger zLo
 				} else {
 					fData = &FileData{}
 					data.Value(func(val []byte) error {
-						logger.Info().Msgf("%03d loading from cache '%s'", id, path)
+						logger.Info().Uint("worker", id).Str("path", path).Msg("loading from cache")
 						if err := json.Unmarshal(val, fData); err != nil {
 							return errors.Wrapf(err, "cannot unmarshal data")
 						}
@@ -214,7 +233,7 @@ func Worker(id uint, fsys fs.FS, actions []string, idx *util.Indexer, logger zLo
 		if fData == nil {
 			slices.Sort(actions)
 			actions = slices.Compact(actions)
-			logger.Info().Msgf("%03d indexing '%s'", id, path)
+			logger.Info().Uint("worker", id).Str("path", path).Msg("indexing")
 			r, cs, err := idx.Index(fsys, path, "", actions, []checksum.DigestAlgorithm{checksum.DigestSHA512}, io.Discard, logger)
 			if err != nil {
 				logger.Error().Err(err).Msgf("cannot index (%s)%s", fsys, path)
@@ -241,9 +260,11 @@ func Worker(id uint, fsys fs.FS, actions []string, idx *util.Indexer, logger zLo
 		}
 
 		basePath := fmt.Sprintf("%v", fsys)
-		WriteConsole(logger, fData, id, basePath, fromCache)
+		WriteLogger(logger, fData, id, basePath, fromCache)
 
-		if badgerDB != nil {
+		if badgerDB == nil {
+			WriteConsole(logger, fData)
+		} else {
 			if err := badgerDB.Update(func(txn *badger.Txn) error {
 				key := []byte("file:" + path)
 				value, err := json.Marshal(fData)
@@ -264,7 +285,7 @@ func Worker(id uint, fsys fs.FS, actions []string, idx *util.Indexer, logger zLo
 	}
 }
 
-func IterateBadger(logger zLogger.ZLogger, emptyFlag bool, duplicateFlag bool, removeFlag bool, regex *regexp.Regexp, jsonlWriter *os.File, csvWriter *csv.Writer, sheet *xlsx.Sheet, badgerDB *badger.DB, startTime int64) error {
+func IterateBadger(logger zLogger.ZLogger, emptyFlag bool, duplicateFlag bool, removeFlag bool, regex *regexp.Regexp, jsonlWriter *os.File, csvWriter *csv.Writer, sheet *xlsx.Sheet, console bool, badgerDB *badger.DB, hit func(fData *FileData) bool) error {
 	var removeList = [][]byte{}
 	if err := badgerDB.View(func(txn *badger.Txn) error {
 		options := badger.DefaultIteratorOptions
@@ -281,12 +302,9 @@ func IterateBadger(logger zLogger.ZLogger, emptyFlag bool, duplicateFlag bool, r
 				if err := json.Unmarshal(v, fData); err != nil {
 					return errors.Wrapf(err, "cannot unmarshal value")
 				}
-				var hit bool
-				hit = (emptyFlag && fData.Size == 0) ||
-					(duplicateFlag && fData.Duplicate) ||
-					(regex != nil && regex.MatchString(fData.Basename)) ||
-					(!emptyFlag && !duplicateFlag && regex == nil)
-				if hit {
+				/*
+				 */
+				if hit(fData) {
 					logger.Info().Msgf("found %s", fData.Path)
 					if jsonlWriter != nil {
 						if err := JsonlWriteLine(jsonlWriter, fData); err != nil {
@@ -298,6 +316,9 @@ func IterateBadger(logger zLogger.ZLogger, emptyFlag bool, duplicateFlag bool, r
 					}
 					if sheet != nil {
 						XlsxWriteLine(sheet, fData)
+					}
+					if console {
+						WriteConsole(logger, fData)
 					}
 					if removeFlag {
 						if err := os.Remove(fData.Path); err != nil {
