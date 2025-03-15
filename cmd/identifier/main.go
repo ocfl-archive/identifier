@@ -1,6 +1,6 @@
 package main
 
-import "github.com/je4/identifier/cmd/identifier/commands"
+import "github.com/ocfl-archive/identifier/cmd/identifier/commands"
 
 /*
 func init() {

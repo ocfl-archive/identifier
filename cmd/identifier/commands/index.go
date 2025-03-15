@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger/v4"
 	badgerOptions "github.com/dgraph-io/badger/v4/options"
-	"github.com/je4/identifier/identifier"
 	"github.com/je4/utils/v2/pkg/zLogger"
+	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/ocfl-archive/indexer/v3/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/tealeg/xlsx/v3"
@@ -85,7 +85,7 @@ func doIndex(cmd *cobra.Command, args []string) {
 			cobra.CheckErr(errors.Errorf("'%s' is not a directory", dataPath))
 		}
 	}
-	if removeFlag && !(emptyFlag || duplicatesFlag || regexpFlag != "") {
+	if removeIndexListFlag && !(emptyIndexListFlag || duplicatesIndexListFlag || regexpIndexListFlag != "") {
 		logger.Error().Msg("remove flag requires at least one of empty, duplicate or regexp flag")
 		defer os.Exit(1)
 		return
@@ -104,10 +104,10 @@ func doIndex(cmd *cobra.Command, args []string) {
 	var jsonlFile *os.File
 	var sheet *xlsx.Sheet
 	var regex *regexp.Regexp
-	if regexpFlag != "" {
-		regex, err = regexp.Compile(regexpFlag)
+	if regexpIndexListFlag != "" {
+		regex, err = regexp.Compile(regexpIndexListFlag)
 		if err != nil {
-			logger.Error().Err(err).Msgf("cannot compile regular expression '%s'", regexpFlag)
+			logger.Error().Err(err).Msgf("cannot compile regular expression '%s'", regexpIndexListFlag)
 			defer os.Exit(1)
 			return
 		}
@@ -236,7 +236,7 @@ func doIndex(cmd *cobra.Command, args []string) {
 		close(jobs)
 	}
 	if badgerDB != nil {
-		if err := identifier.IterateBadger(logger, emptyFlag, duplicatesFlag, removeFlag, regex, jsonlFile, csvWriter, sheet, consoleFlag, badgerDB, func(fData *identifier.FileData) bool {
+		if err := identifier.IterateBadger(logger, emptyIndexListFlag, duplicatesIndexListFlag, removeIndexListFlag, regex, jsonlFile, csvWriter, sheet, consoleFlag, badgerDB, func(fData *identifier.FileData) bool {
 			return true
 		}); err != nil {
 			logger.Error().Err(err).Msg("cannot iterate badger")

@@ -5,10 +5,10 @@ import (
 	"emperror.dev/errors"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/je4/identifier/config"
-	"github.com/je4/identifier/identifier"
-	"github.com/je4/identifier/version"
 	"github.com/je4/utils/v2/pkg/zLogger"
+	"github.com/ocfl-archive/identifier/config"
+	"github.com/ocfl-archive/identifier/identifier"
+	"github.com/ocfl-archive/identifier/version"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -27,7 +27,7 @@ var rootCmd = &cobra.Command{
 	Use:   appname,
 	Short: "identifier is a tool for technical metadata identification",
 	Long: `A tool for technical metadata identification bases on indexer.
-source code is available at: https://github.com/je4/identifier
+source code is available at: https://github.com/ocfl-archive/identifier
 by Jürgen Enge (University Library Basel, juergen@info-age.net)`,
 	Version: fmt.Sprintf("%s '%s' (%s)", version.Version, version.ShortCommit(), version.Date),
 	Run: func(cmd *cobra.Command, args []string) {

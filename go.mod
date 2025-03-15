@@ -1,4 +1,4 @@
-module github.com/je4/identifier
+module github.com/ocfl-archive/identifier
 
 go 1.24.0
 
