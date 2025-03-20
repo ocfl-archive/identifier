@@ -138,7 +138,8 @@ func init() {
 	filesInit()
 	foldersInit()
 	indexInit()
-	rootCmd.AddCommand(clearpathCmd, filesCmd, foldersCmd, indexCmd)
+	aiInit()
+	rootCmd.AddCommand(clearpathCmd, filesCmd, foldersCmd, indexCmd, aiCmd)
 }
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {

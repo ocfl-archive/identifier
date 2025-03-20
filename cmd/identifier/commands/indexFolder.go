@@ -75,7 +75,11 @@ func indexFoldersInit() {
 	indexFoldersCmd.Flags().BoolVar(&consoleIndexFolderFlag, "console", false, "write folder statistics to console")
 	indexFoldersCmd.Flags().StringVar(&prefixIndexFolderFlag, "prefix", "", "folder path prefix")
 	indexFoldersCmd.Flags().StringVar(&dbIndexFolderFlag, "database", "", "folder for database (must already exist)")
+	indexFoldersCmd.MarkFlagDirname("database")
 	indexFoldersCmd.MarkFlagRequired("database")
+	indexFoldersCmd.MarkFlagFilename("jsonl", "jsonl", "json")
+	indexFoldersCmd.MarkFlagFilename("csv", "csv")
+	indexFoldersCmd.MarkFlagFilename("xlsx", "xlsx")
 }
 
 func doindexFolders(cmd *cobra.Command, args []string) {

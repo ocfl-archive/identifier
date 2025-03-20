@@ -64,6 +64,11 @@ func indexInit() {
 	indexCmd.Flags().UintVarP(&concurrentFlag, "concurrent", "n", 3, "number of concurrent workers")
 	indexCmd.Flags().StringSliceVar(&actionsFlag, "actions", []string{"siegfried", "xml"}, "actions to be performed")
 	indexCmd.Flags().BoolVar(&consoleFlag, "console", false, "write index to console")
+	indexCmd.MarkFlagDirname("database")
+	indexCmd.MarkFlagFilename("jsonl", "jsonl", "json")
+	indexCmd.MarkFlagFilename("csv", "csv")
+	indexCmd.MarkFlagFilename("xlsx", "xlsx")
+
 	indexListInit()
 	indexCmd.AddCommand(indexListCmd)
 }
