@@ -64,7 +64,7 @@ Show logging entries up to INFO level.
 2025-03-13T18:08:39+01:00 INF
 Level 0 [ ]: NumTables: 03. Size: 68 KiB of 0 B. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 64 MiB
 [...]`,
-	Args: nil,
+	Args: cobra.NoArgs,
 	Run:  doindexFolders,
 }
 
@@ -83,19 +83,6 @@ func indexFoldersInit() {
 }
 
 func doindexFolders(cmd *cobra.Command, args []string) {
-	var dataPath string
-	var err error
-	if dataPath == "" && dbFolderFlag == "" {
-		logger.Error().Msg("either data path or database folder must be set")
-		defer os.Exit(1)
-		return
-	}
-	if removeIndexListFlag && !(emptyIndexListFlag || duplicatesIndexListFlag || regexpIndexListFlag != "") {
-		logger.Error().Msg("remove flag requires at least one of empty, duplicate or regexp flag")
-		defer os.Exit(1)
-		return
-	}
-
 	output, err := identifier.NewOutput(false, csvFlag, jsonlFlag, xlsxFlag, "folders", folderFields, logger)
 	if err != nil {
 		logger.Error().Err(err).Msg("cannot create output")

@@ -70,7 +70,9 @@ func indexInit() {
 	indexCmd.MarkFlagFilename("xlsx", "xlsx")
 
 	indexListInit()
-	indexCmd.AddCommand(indexListCmd)
+	indexFoldersInit()
+	indexCmd.AddCommand(indexListCmd, indexFoldersCmd)
+
 }
 
 func doIndex(cmd *cobra.Command, args []string) {
