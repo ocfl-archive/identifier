@@ -198,8 +198,8 @@ github.com/richardlehane/mscfb v1.0.4/go.mod h1:YzVpcZg9czvAuhk9T+a3avCpcFPMUWm7
 github.com/richardlehane/msoleps v1.0.1/go.mod h1:BWev5JBpU9Ko2WAgmZEuiz4/u3ZYTKbjLycmwiWUfWg=
 github.com/richardlehane/msoleps v1.0.4 h1:WuESlvhX3gH2IHcd8UqyCuFY5yiq/GR/yqaSM/9/g00=
 github.com/richardlehane/msoleps v1.0.4/go.mod h1:BWev5JBpU9Ko2WAgmZEuiz4/u3ZYTKbjLycmwiWUfWg=
-github.com/richardlehane/siegfried v1.11.2 h1:5ZCbjOzusYNFQXeRpMEe66Op/4T3/d3tcEGIlCfnOKs=
-github.com/richardlehane/siegfried v1.11.2/go.mod h1:G8OfMT/gqJFU+ncvqpPIeb+lLR3NRqztYFa4/1ZOREY=
+github.com/richardlehane/siegfried v1.11.1 h1:Ke0IKqeQE3Y6ptSWFwaeX4kVI/OEokWgXOKR49otMbw=
+github.com/richardlehane/siegfried v1.11.1/go.mod h1:63eYvfRqpjzB/TKa8uNAeQsl/+h9JuIezbt7Rc9sqMo=
 github.com/richardlehane/xmldetect v1.0.2 h1:/3ooFuJwtgpMMe14/7m8a/JIvECMx6SpsPcDRiNyR8o=
 github.com/richardlehane/xmldetect v1.0.2/go.mod h1:Zp1lhTLRJa2p2QKA4jOruVQYc0NFQDO0YUz3k/k6JcE=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=

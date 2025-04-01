@@ -2,6 +2,8 @@ module github.com/ocfl-archive/identifier
 
 go 1.24.0
 
+replace github.com/richardlehane/siegfried => github.com/richardlehane/siegfried v1.11.1
+
 require (
 	emperror.dev/errors v0.8.1
 	github.com/BurntSushi/toml v1.5.0
