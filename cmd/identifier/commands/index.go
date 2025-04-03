@@ -71,7 +71,9 @@ func indexInit() {
 
 	indexListInit()
 	indexFoldersInit()
-	indexCmd.AddCommand(indexListCmd, indexFoldersCmd)
+	indexPronomInit()
+	indexMimeInit()
+	indexCmd.AddCommand(indexListCmd, indexFoldersCmd, indexPronomCmd, indexMimeCmd)
 
 }
 

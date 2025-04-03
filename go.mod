@@ -10,7 +10,7 @@ require (
 	github.com/je4/kilib v0.0.5
 	github.com/je4/utils/v2 v2.0.58
 	github.com/jedib0t/go-pretty/v6 v6.6.7
-	github.com/ocfl-archive/indexer/v3 v3.0.14
+	github.com/ocfl-archive/indexer/v3 v3.0.17
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
 	github.com/tealeg/xlsx/v3 v3.3.12

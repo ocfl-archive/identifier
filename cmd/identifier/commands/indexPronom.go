@@ -23,10 +23,10 @@ var consoleIndexPronomFlag bool
 var fieldsIndexPronom = []string{"pronom", "count", "size (bytes)", "size"}
 
 var indexPronomCmd = &cobra.Command{
-	Use:     "list [path to data]",
+	Use:     "pronom",
 	Aliases: []string{},
-	Short:   "get technical metadata from database",
-	Long: `get technical metadata from database
+	Short:   "get pronom statistics from database",
+	Long: `get pronomstatistics from database
 `,
 	Example: ``,
 	Args:    nil,
@@ -48,11 +48,6 @@ func indexPronomInit() {
 
 func doindexPronom(cmd *cobra.Command, args []string) {
 	var err error
-	if !(emptyIndexPronomFlag || duplicatesIndexPronomFlag || regexpIndexPronomFlag != "") {
-		logger.Error().Msg("remove flag requires at least one of empty, duplicate or regexp flag")
-		defer os.Exit(1)
-		return
-	}
 
 	var regex *regexp.Regexp
 	if regexpIndexPronomFlag != "" {

@@ -23,7 +23,7 @@ var dbIndexFolderFlag string
 // var fields = []string{"path", "folder", "basename", "size", "lastmod", "duplicate", "mimetype", "pronom", "type", "subtype", "checksum", "width", "height", "duration"}
 var folderFields = []string{"Files", "Folders", "Bytes", "Size", "Path"}
 var indexFoldersCmd = &cobra.Command{
-	Use:     "folders [path to data]",
+	Use:     "folders",
 	Aliases: []string{},
 	Short:   "get folder statistics from database",
 	Long: `get folder statistics from database
@@ -83,7 +83,7 @@ func indexFoldersInit() {
 }
 
 func doindexFolders(cmd *cobra.Command, args []string) {
-	output, err := identifier.NewOutput(false, csvFlag, jsonlFlag, xlsxFlag, "folders", folderFields, logger)
+	output, err := identifier.NewOutput(false, csvIndexFolderFlag, jsonlIndexFolderFlag, xlsxIndexFolderFlag, "folders", folderFields, logger)
 	if err != nil {
 		logger.Error().Err(err).Msg("cannot create output")
 		defer os.Exit(1)

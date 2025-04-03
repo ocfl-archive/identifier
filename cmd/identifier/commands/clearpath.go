@@ -7,9 +7,15 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
-var renameFlag bool
+var clearPathRenameFlag bool
+var clearPathAutoFlag bool
+var clearPathRegexpFlag string
+var clearPathRegexpReplaceFlag string
+
+var clearPathRegexp *regexp.Regexp
 
 var clearpathCmd = &cobra.Command{
 	Use:     "clearpath [path to data]",
@@ -52,17 +58,37 @@ Caveat: dry-run (no --rename flag) is always recommended before renaming files o
 }
 
 func clearpathInit() {
-	clearpathCmd.Flags().BoolVar(&renameFlag, "rename", false, "renames the files on filesystem (if not set it's just a dry run)")
+	clearpathCmd.Flags().BoolVar(&clearPathAutoFlag, "auto", false, "use built in rename rules")
+	clearpathCmd.Flags().BoolVar(&clearPathRenameFlag, "rename", false, "renames the files on filesystem (if not set it's just a dry run)")
+	clearpathCmd.Flags().StringVar(&clearPathRegexpFlag, "regexp", "", "use custom regexp for renaming")
+	clearpathCmd.Flags().StringVar(&clearPathRegexpReplaceFlag, "replace", "", "replace characters for regexp")
+	clearpathCmd.MarkFlagsRequiredTogether("regexp", "replace")
+	clearpathCmd.MarkFlagsOneRequired("auto", "regexp")
 }
 
 func doClearpath(cmd *cobra.Command, args []string) {
+	if clearPathRegexpFlag != "" {
+		var err error
+		clearPathRegexp, err = regexp.Compile(clearPathRegexpFlag)
+		if err != nil {
+			logger.Error().Err(err).Msgf("cannot compile regular expression '%s'", clearPathRegexpFlag)
+			defer os.Exit(1)
+			return
+		}
+		fmt.Printf("#including regexp \"%s\"\n", clearPathRegexpFlag)
+	}
+
 	dataPath, err := identifier.Fullpath(args[0])
-	cobra.CheckErr(err)
+	if err != nil {
+		logger.Error().Err(err).Msgf("cannot get full path for '%s'", args[0])
+		defer os.Exit(1)
+		return
+	}
 	if fi, err := os.Stat(dataPath); err != nil || !fi.IsDir() {
 		cobra.CheckErr(errors.Errorf("'%s' is not a directory", dataPath))
 	}
 
-	if !renameFlag {
+	if !clearPathRenameFlag {
 		logger.Info().Msg("dry-run: no files will be renamed")
 	}
 	logger.Info().Msgf("working on folder '%s'", dataPath)
@@ -70,9 +96,9 @@ func doClearpath(cmd *cobra.Command, args []string) {
 	pathElements, err := identifier.BuildPath(dirFS)
 	cobra.CheckErr(errors.Wrapf(err, "cannot build path '%s'", dataPath))
 
-	for name, newName := range pathElements.ClearIterator {
+	for name, newName := range pathElements.ClearIterator(clearPathAutoFlag, clearPathRegexp, clearPathRegexpReplaceFlag) {
 		fmt.Printf("    %s\n--> %s\n\n", name, newName)
-		if renameFlag {
+		if clearPathRenameFlag {
 			fullpath := filepath.Join(dataPath, name)
 			newpath := filepath.Join(dataPath, newName)
 			logger.Info().Msgf("renaming '%s' to '%s'", fullpath, newpath)

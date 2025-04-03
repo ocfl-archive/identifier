@@ -171,20 +171,54 @@ func (p *pathElement) ClearName() (string, bool) {
 	return p.clearName, p.clearName != p.name
 }
 
-func (p *pathElement) ClearIterator(yield func(string, string) bool) {
-	for _, sub := range p.subs {
-		sub.ClearIterator(yield)
-	}
-	clearName, changed := p.ClearName()
-	if changed {
-		newName := ""
-		if p.parent != nil {
-			newName = p.parent.String() + "/" + clearName
-		} else {
-			newName = clearName
+func (p *pathElement) ClearIterator(auto bool, regex *regexp.Regexp, replace string) func(func(string, string) bool) {
+	regexSubs := regex.NumSubexp()
+	return func(yield func(string, string) bool) {
+		for _, sub := range p.subs {
+			sub.ClearIterator(auto, regex, replace)(yield)
 		}
-		if !yield(strings.TrimPrefix(p.String(), "/"), strings.TrimPrefix(newName, "/")) {
-			return
+		var cleanedName string
+		var changed bool
+		if auto {
+			cleanedName, changed = p.ClearName()
+		}
+		if regex != nil {
+			name := p.name
+			if cleanedName != "" {
+				name = cleanedName
+			}
+			if regexSubs > 0 {
+				if matches := regex.FindAllStringSubmatchIndex(name, -1); len(matches) > 0 {
+					for _, match := range matches {
+						//						start := match[0]
+						//						end := match[1]
+						for i := regexSubs - 1; i >= 0; i-- {
+							s := match[2*i+2]
+							e := match[2*i+3]
+							if e-s <= 0 {
+								continue
+							}
+							name = name[:s] + replace + name[e:]
+						}
+					}
+					cleanedName = regex.ReplaceAllString(name, replace)
+					changed = true
+				}
+			} else {
+				cleanedName = regex.ReplaceAllString(name, replace)
+				changed = true
+			}
+		}
+		if changed {
+			newName := ""
+			if p.parent != nil {
+				newName = p.parent.String() + "/" + cleanedName
+			} else {
+				newName = cleanedName
+			}
+			if !yield(strings.TrimPrefix(p.String(), "/"), strings.TrimPrefix(newName, "/")) {
+				return
+			}
 		}
 	}
 }
