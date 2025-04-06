@@ -82,7 +82,7 @@ func doAi(cmd *cobra.Command, args []string) {
 		aiQuery = `Erstelle basierend auf der "CSV-Datei" Metadaten für jeden Folder und 
 fülle die leeren Felder der "JSON-Datei" für alle dort angegebenen Folder aus. Stelle sicher, dass jeder Folder genau einmal auftaucht.
 Falls Folder oder Dateinamen Semantik beinhalten, Nutze diese für Titel und Beschreibung.
-Sprache ist Englisch und der Duktus wissenschaftlich.`
+Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSON Format korrekt eingehalten wird.`
 	}
 	modelAIFlag = strings.ToLower(modelAIFlag)
 	modelParts := strings.SplitN(modelAIFlag, "-", 2)
@@ -172,6 +172,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich.`
 	}
 	csvWriter.Flush()
 	contextWriter.Flush()
+	logger.Info().Msgf("writing %d files to csv", len(result))
 	resultBytes, err := json.Marshal(result)
 	if err != nil {
 		logger.Error().Err(err).Msg("cannot marshal result")

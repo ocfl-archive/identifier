@@ -35,25 +35,9 @@ var indexCmd = &cobra.Command{
 	Long: `retrieves technical metadata from files
 Persistent output can be written to a badger database, which will allow additional operations without reindexing the files.
 `,
-	Example: `Index everything, store in database and CSV file and show it on console
-Show log level WARN and use 2 concurrent workers
-
-` + appname + ` --log-level WARN index c:/daten/aiptest0 --database c:\temp\indexerbadger --csv c:/temp/test.csv --console -n 2
-'fulltext_5693376.xml' - d47b0e8f8e47d9c530e7d9b9efbcdd758e21b6bd80957c1853ade8e7da5c08050b90580dcf10d3e416938afc5e7f373457e4f7da3d6be37a77678065b2cd02ee
-           [UNKNOWN - application/xml] 400 kB
-'info.json' - 4e9cb87f40632ea4e861d067a23ff295e479154f56970d99d3b584d42c980fa46e1029965aa61915ca62e2d2967d025797008a9c219a7262cc5a71f5143d99a9
-           [fmt/817 - application/json] 1.2 kB
-'meta/random_mets_xxx.xml' - 59d215f507138df41bc6890e6ba11a1ec3cf8bd18b40530a1b067d0cd97d3334f980cf8b26ad365d780ab5adf0def24e46962466eb4f961b10352cb8c139a148
-           [UNKNOWN - application/xml] 41 kB
-'meta/random_premis_xxx.xml' - 862886f970afadd81120c542297bd3dc86840fe3016eb1983613953b77449e62cb39d256c660abcb360ddf2bcf4f5bf5ad9fc90d050f545a30a45d78280b5734
-           [UNKNOWN - application/xml] 191 kB
-'meta/schemas/MARC21slim.xsd' - c01998516db0d82750fd76a3ad0c36a1aa260aa047dcdade3259424d4332f19cca176a19cded59b6a19942f090b4f077ed645bc66a0c73368c5d2ef799105bb9
-           [x-fmt/280 - application/xml] 7.2 kB
-'payload/#1    audio/Dragan_Espenschied_-_01_-_Mein_Leben_fr_die_Wissenschaft.ogg' - 33c2a7bc31b654bdc7476ec0f3f0d45712a3e8a0cc81b92c005d545fa8a57f8934f409bed79fc806c876427402a8ad764e82815ed998a54d60415fd57ef3e2ab
-           [fmt/203 - audio/ogg] 364 kB
-[...]`,
-	Args: cobra.ExactArgs(1),
-	Run:  doIndex,
+	Example: ``,
+	Args:    cobra.ExactArgs(1),
+	Run:     doIndex,
 }
 
 func indexInit() {
