@@ -80,10 +80,17 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 		txn := r.badgerDB.NewTransaction(true)
 		defer txn.Discard()
 		r.logger.Info().Msgf("removing %d keys", len(removeKeys))
-		for _, k := range removeKeys {
+		for i, k := range removeKeys {
 			r.logger.Info().Msgf("removing key '%s'", k)
 			if err := txn.Delete(k); err != nil {
 				r.logger.Error().Err(err).Msgf("cannot remove key '%s'", k)
+			}
+			if (i+1)%100 == 0 {
+				if err := txn.Commit(); err != nil {
+					r.logger.Error().Err(err).Msgf("cannot commit transaction")
+					return errors.Wrapf(err, "cannot commit transaction")
+				}
+				txn = r.badgerDB.NewTransaction(true)
 			}
 		}
 		if err := txn.Commit(); err != nil {
