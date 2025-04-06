@@ -14,7 +14,7 @@ func NewBadgerIterator(dbFolderPath string, readOnly bool, logger zLogger.ZLogge
 		readOnly = false
 	}
 	var err error
-	reader := &BadgerIterator{readOnly: readOnly}
+	reader := &BadgerIterator{readOnly: readOnly, logger: logger}
 	if dbFolderPath != "" {
 		if reader.badgerDB, err = badger.Open(badger.DefaultOptions(dbFolderPath).WithReadOnly(readOnly).WithCompression(badgerOptions.Snappy).WithLogger(zLogger.NewZWrapper(logger))); err != nil {
 			return nil, errors.Wrapf(err, "cannot open badger database in '%s'", dbFolderPath)
@@ -27,6 +27,7 @@ func NewBadgerIterator(dbFolderPath string, readOnly bool, logger zLogger.ZLogge
 type BadgerIterator struct {
 	badgerDB *badger.DB
 	readOnly bool
+	logger   zLogger.ZLogger
 }
 
 func (r *BadgerIterator) Close() error {
@@ -73,6 +74,7 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 	if !r.readOnly {
 		if err := r.badgerDB.Update(func(txn *badger.Txn) error {
 			for _, k := range removeKeys {
+				r.logger.Info().Msgf("removing key '%s'", k)
 				if err := txn.Delete(k); err != nil {
 					return err
 				}

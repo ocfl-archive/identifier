@@ -150,7 +150,7 @@ func doindexList(cmd *cobra.Command, args []string) {
 				if err := os.Remove(fullpath); err != nil {
 					logger.Error().Err(err).Msgf("cannot remove file '%s'", fullpath)
 					// return false, errors.Wrapf(err, "cannot remove file '%s'", fData.Path)
-					return removeIndexListFlag, nil
+					return true, nil
 				}
 				return true, nil
 			}
