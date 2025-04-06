@@ -77,17 +77,18 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 		return errors.Wrapf(err, "cannot iterate over badger database with prefix '%s'", prefix)
 	}
 	if !r.readOnly {
-		if err := r.badgerDB.Update(func(txn *badger.Txn) error {
-			for _, k := range removeKeys {
-				r.logger.Info().Msgf("removing key '%s'", k)
-				if err := txn.Delete(k); err != nil {
-					r.logger.Error().Err(err).Msgf("cannot remove key '%s'", k)
-				}
+		txn := r.badgerDB.NewTransaction(true)
+		for _, k := range removeKeys {
+			r.logger.Info().Msgf("removing key '%s'", k)
+			if err := txn.Delete(k); err != nil {
+				r.logger.Error().Err(err).Msgf("cannot remove key '%s'", k)
 			}
-			return nil
-		}); err != nil {
-			return errors.Wrap(err, "cannot remove keys")
 		}
+		if err := txn.Commit(); err != nil {
+			r.logger.Error().Err(err).Msgf("cannot commit transaction")
+			return errors.Wrapf(err, "cannot commit transaction")
+		}
+		defer txn.Discard()
 	}
 	return nil
 }
