@@ -16,6 +16,11 @@ func NewBadgerIterator(dbFolderPath string, readOnly bool, logger zLogger.ZLogge
 	var err error
 	reader := &BadgerIterator{readOnly: readOnly, logger: logger}
 	if dbFolderPath != "" {
+		if readOnly {
+			logger.Info().Msgf("open read only badger database in '%s'", dbFolderPath)
+		} else {
+			logger.Info().Msgf("open read write badger database in '%s'", dbFolderPath)
+		}
 		if reader.badgerDB, err = badger.Open(badger.DefaultOptions(dbFolderPath).WithReadOnly(readOnly).WithCompression(badgerOptions.Snappy).WithLogger(zLogger.NewZWrapper(logger))); err != nil {
 			return nil, errors.Wrapf(err, "cannot open badger database in '%s'", dbFolderPath)
 		}
@@ -78,9 +83,6 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 				if err := txn.Delete(k); err != nil {
 					r.logger.Error().Err(err).Msgf("cannot remove key '%s'", k)
 				}
-			}
-			if err := txn.Commit(); err != nil {
-				r.logger.Error().Err(err).Msgf("cannot commit transaction")
 			}
 			return nil
 		}); err != nil {
