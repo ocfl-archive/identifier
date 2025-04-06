@@ -86,6 +86,7 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 				r.logger.Error().Err(err).Msgf("cannot remove key '%s'", k)
 			}
 			if (i+1)%100 == 0 {
+				r.logger.Info().Msgf("committing transaction with %d keys", i+1)
 				if err := txn.Commit(); err != nil {
 					r.logger.Error().Err(err).Msgf("cannot commit transaction")
 					return errors.Wrapf(err, "cannot commit transaction")
