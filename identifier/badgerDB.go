@@ -78,6 +78,8 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 	}
 	if !r.readOnly {
 		txn := r.badgerDB.NewTransaction(true)
+		defer txn.Discard()
+		r.logger.Info().Msgf("removing %d keys", len(removeKeys))
 		for _, k := range removeKeys {
 			r.logger.Info().Msgf("removing key '%s'", k)
 			if err := txn.Delete(k); err != nil {
@@ -88,7 +90,7 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 			r.logger.Error().Err(err).Msgf("cannot commit transaction")
 			return errors.Wrapf(err, "cannot commit transaction")
 		}
-		defer txn.Discard()
+		r.logger.Info().Msgf("committed %d removed keys", len(removeKeys))
 	}
 	return nil
 }
