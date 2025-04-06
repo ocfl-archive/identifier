@@ -78,9 +78,9 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 				if err := txn.Delete(k); err != nil {
 					r.logger.Error().Err(err).Msgf("cannot remove key '%s'", k)
 				}
-				if err := txn.Commit(); err != nil {
-					r.logger.Error().Err(err).Msgf("cannot commit transaction")
-				}
+			}
+			if err := txn.Commit(); err != nil {
+				r.logger.Error().Err(err).Msgf("cannot commit transaction")
 			}
 			return nil
 		}); err != nil {
