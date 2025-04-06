@@ -54,7 +54,7 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 		defer it.Close()
 		for it.Seek([]byte(prefix)); it.ValidForPrefix([]byte(prefix)); it.Next() {
 			item := it.Item()
-			k := item.Key()
+			k := item.KeyCopy(nil)
 			if err := item.Value(func(val []byte) error {
 				fData := &FileData{}
 				if err := json.Unmarshal(val, fData); err != nil {
@@ -78,7 +78,9 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 	}
 	if !r.readOnly {
 		txn := r.badgerDB.NewTransaction(true)
-		defer txn.Discard()
+		defer func() {
+			txn.Discard()
+		}()
 		r.logger.Info().Msgf("removing %d keys", len(removeKeys))
 		for i, k := range removeKeys {
 			r.logger.Info().Msgf("removing key '%s'", k)
