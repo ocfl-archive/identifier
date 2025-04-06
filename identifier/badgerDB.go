@@ -76,7 +76,7 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 			for _, k := range removeKeys {
 				r.logger.Info().Msgf("removing key '%s'", k)
 				if err := txn.Delete(k); err != nil {
-					return err
+					r.logger.Error().Err(err).Msgf("cannot remove key '%s'", k)
 				}
 			}
 			return nil
