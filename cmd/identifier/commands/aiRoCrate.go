@@ -179,11 +179,12 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 			if lastInd <= 0 {
 				logger.Debug().Msgf("no parent element for '%s'", id)
 				roCrate.AddElement(data, false)
-
-				root := roCrate.GetRoot()
-				if root != nil {
-					root.AddPart(data.ID, false)
-				}
+				/*
+					root := roCrate.GetRoot()
+					if root != nil {
+						root.AddPart(data.ID, false)
+					}
+				*/
 				continue
 			}
 			parentID := id[:lastInd] + "/"

@@ -199,7 +199,5 @@ func (r *RoCrate) AddElement(elem *RoCrateGraphElement, replace bool) {
 	if root.HasPart == nil {
 		root.HasPart = RoCrateGraph{}
 	}
-	/*
-		root.HasPart = append(root.HasPart, &RoCrateGraphElement{ID: elem.ID})
-	*/
+	root.HasPart = append(root.HasPart, &RoCrateGraphElement{ID: elem.ID})
 }
