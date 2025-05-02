@@ -60,6 +60,14 @@ func aiRoCrateInit() {
 
 var fieldsAIRoCrate = []string{"folder", "title", "description"}
 
+func getParentID(id string) string {
+	lastInd := strings.LastIndex(strings.TrimSuffix(id, "/"), "/")
+	if lastInd <= 0 {
+		return ""
+	}
+	return id[:lastInd] + "/"
+}
+
 func doAIRoCrate(cmd *cobra.Command, args []string) {
 	modelAIRoCrateFlag = strings.ToLower(modelAIRoCrateFlag)
 	var dataPath string
@@ -175,35 +183,53 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 		})
 		for _, id := range ids {
 			data := folderList[id]
-			lastInd := strings.LastIndex(strings.TrimSuffix(id, "/"), "/")
-			if lastInd <= 0 {
-				logger.Debug().Msgf("no parent element for '%s'", id)
-				roCrate.AddElement(data, false)
-				root := roCrate.GetRoot()
-				if root != nil {
-					root.AddPart(data.ID, false)
+			/*
+				parentID := getParentID(id)
+				if parentID == "" {
+					logger.Debug().Msgf("no parent element for '%s'", id)
+					roCrate.AddElement(data, false)
+					root := roCrate.GetRoot()
+					if root != nil {
+						root.AddPart(data.ID, false)
+					}
+					continue
 				}
-				continue
-			}
-			parentID := id[:lastInd] + "/"
-			parentElem, ok := folderList[parentID]
-			if !ok {
-				logger.Debug().Msgf("parent element '%s' of '%s' not found", parentID, id)
-				name, err := url.PathUnescape(parentID)
+			*/
+			var getParent func(id string) (*identifier.RoCrateGraphElement, string)
+			getParent = func(id string) (*identifier.RoCrateGraphElement, string) {
+				pID := getParentID(id)
+				parentElem, ok := folderList[pID]
+				if ok {
+					logger.Debug().Msgf("parent element '%s' of '%s' found", pID, id)
+					return parentElem, pID
+				}
+				logger.Debug().Msgf("parent element '%s' of '%s' not found", pID, id)
+				name, err := url.PathUnescape(pID)
 				if err != nil {
-					name = ""
+					name = pID
 				}
-				folderList[parentID] = &identifier.RoCrateGraphElement{
-					ID:          parentID,
+				folderList[pID] = &identifier.RoCrateGraphElement{
+					ID:          pID,
 					Type:        identifier.StringOrList{"Dataset"},
 					Name:        name,
 					Description: "no description available",
 				}
-				parentElem = folderList[parentID]
+				parentElem = folderList[pID]
+				roCrate.AddElement(folderList[pID], false)
+				parentParent, _ := getParent(pID)
+				if parentParent != nil {
+					parentParent.AddPart(pID, false)
+				}
+				return parentElem, pID
 			}
-			logger.Debug().Msgf("adding '%s' to parent '%s'", id, parentID)
-			roCrate.AddElement(data, false)
-			parentElem.AddPart(data.ID, false)
+			parentElem, parentID := getParent(id)
+			if parentElem == nil {
+				logger.Debug().Msgf("parent element '%s' of '%s' not found", parentID, id)
+			} else {
+				logger.Debug().Msgf("adding '%s' to parent '%s'", id, parentID)
+				roCrate.AddElement(data, false)
+				parentElem.AddPart(data.ID, false)
+			}
 
 		}
 		return nil
