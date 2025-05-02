@@ -139,6 +139,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 		for it.Seek([]byte(prefix)); it.ValidForPrefix([]byte(prefix)); it.Next() {
 			item := it.Item()
 			k := item.Key()
+			logger.Debug().Msgf("processing key '%s'", k)
 			if err := item.Value(func(val []byte) error {
 				data := &aiResultStruct{}
 				if err := json.Unmarshal(val, data); err != nil {
