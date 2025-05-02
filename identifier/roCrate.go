@@ -115,19 +115,19 @@ func (r *RoCrateGraphElement) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RoCrateGraphElement) AddChild(data *RoCrateGraphElement, b bool) {
+func (r *RoCrateGraphElement) AddPart(id string, b bool) {
 	if r.HasPart == nil {
 		r.HasPart = RoCrateGraph{}
 	}
 	for _, e := range r.HasPart {
-		if e.ID == data.ID {
+		if e.ID == id {
 			if b {
-				e = data
+				e.ID = id
 			}
 			return
 		}
 	}
-	r.HasPart = append(r.HasPart, data)
+	r.HasPart = append(r.HasPart, &RoCrateGraphElement{ID: id})
 }
 
 type RoCrate struct {
@@ -199,5 +199,7 @@ func (r *RoCrate) AddElement(elem *RoCrateGraphElement, replace bool) {
 	if root.HasPart == nil {
 		root.HasPart = RoCrateGraph{}
 	}
-	root.HasPart = append(root.HasPart, &RoCrateGraphElement{ID: elem.ID})
+	/*
+		root.HasPart = append(root.HasPart, &RoCrateGraphElement{ID: elem.ID})
+	*/
 }
