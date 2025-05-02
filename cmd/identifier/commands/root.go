@@ -102,6 +102,7 @@ func initConfig() {
 	}
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	log.Info().Msgf("log level: %s", conf.Log.Level)
 	_logger, _logstash, _logfile, err := ublogger.CreateUbMultiLoggerTLS(conf.Log.Level, conf.Log.File,
 		ublogger.SetDataset(conf.Log.Stash.Dataset),
 		ublogger.SetLogStash(conf.Log.Stash.LogstashHost, conf.Log.Stash.LogstashPort, conf.Log.Stash.Namespace, conf.Log.Stash.LogstashTraceLevel),
@@ -121,6 +122,7 @@ func initConfig() {
 
 	l2 := _logger.With().Timestamp().Logger() //.Output(output)
 	logger = &l2
+	logger.Debug().Msgf("logger with level %s created", conf.Log.Level)
 
 	return
 }
