@@ -106,8 +106,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 			defer os.Exit(1)
 			return
 		}
-	}
-	if fi.IsDir() {
+	} else if fi.IsDir() {
 		logger.Error().Msgf("'%s' is a directory", roCratePath)
 		defer os.Exit(1)
 		return
@@ -180,38 +179,10 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 				return nil
 			}
 			parentID := id[:lastInd] + "/"
-			parentElem := roCrate.Get(parentID)
-			if parentElem == nil {
+			if parentElem, ok := folderList[parentID]; !ok {
 				roCrate.AddElement(data, false)
 			} else {
 				parentElem.AddChild(data, false)
-			}
-		}
-		for it.Seek([]byte(prefix)); it.ValidForPrefix([]byte(prefix)); it.Next() {
-			item := it.Item()
-			k := item.Key()
-			if err := item.Value(func(val []byte) error {
-				data := &aiResultStruct{}
-				if err := json.Unmarshal(val, data); err != nil {
-					return errors.Wrapf(err, "cannot unmarshal file data from key '%s'", k)
-				}
-
-				id := strings.TrimSuffix(data.Folder, "/")
-				lastInd := strings.LastIndex(id, "/")
-				if lastInd <= 0 {
-					return nil
-				}
-				parentID := id[:lastInd] + "/"
-				id += "/"
-
-				elem := roCrate.Get(parentID)
-				if elem == nil {
-					logger.Error().Msgf("cannot find element '%s' in roCrate", id)
-					return nil
-				}
-				return nil
-			}); err != nil {
-				return errors.WithStack(err)
 			}
 		}
 		return nil
