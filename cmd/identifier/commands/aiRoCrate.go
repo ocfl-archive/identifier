@@ -23,10 +23,10 @@ const defaultRoCrate = `{
 		  "@type": "CreativeWork",
 		  "@id": "ro-crate-metadata.json",
 		  "conformsTo": {"@id": "https://w3id.org/ro/crate/1.1"},
-		  "about": {"@id": "/"}
+		  "about": {"@id": "./"}
 		},  
 		{
-		  "@id": "/",
+		  "@id": "./",
 		  "@type": [
 			"Dataset"
 		  ],
