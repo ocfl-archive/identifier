@@ -145,7 +145,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 					return errors.Wrapf(err, "cannot unmarshal file data from key '%s'", k)
 				}
 				logger.Info().Msgf("processing %s", data.Folder)
-				id := url.QueryEscape(strings.TrimSuffix(data.Folder, "/") + "/")
+				id := strings.Replace(url.PathEscape(strings.TrimSuffix(data.Folder, "/")+"/"), "%2F", "/", -1)
 				folderList[id] = &identifier.RoCrateGraphElement{
 					ID:          id,
 					Type:        identifier.StringOrList{"Dataset"},
