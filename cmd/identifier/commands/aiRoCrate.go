@@ -186,13 +186,25 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 				continue
 			}
 			parentID := id[:lastInd] + "/"
-			if parentElem, ok := folderList[parentID]; !ok {
+			parentElem, ok := folderList[parentID]
+			if !ok {
 				logger.Debug().Msgf("parent element '%s' of '%s' not found", parentID, id)
-			} else {
-				logger.Debug().Msgf("adding '%s' to parent '%s'", id, parentID)
-				roCrate.AddElement(data, false)
-				parentElem.AddPart(data.ID, false)
+				name, err := url.PathUnescape(parentID)
+				if err != nil {
+					name = ""
+				}
+				folderList[parentID] = &identifier.RoCrateGraphElement{
+					ID:          parentID,
+					Type:        identifier.StringOrList{"Dataset"},
+					Name:        name,
+					Description: "no description available",
+				}
+				parentElem = folderList[parentID]
 			}
+			logger.Debug().Msgf("adding '%s' to parent '%s'", id, parentID)
+			roCrate.AddElement(data, false)
+			parentElem.AddPart(data.ID, false)
+
 		}
 		return nil
 	}); err != nil {
