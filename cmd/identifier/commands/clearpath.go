@@ -94,7 +94,7 @@ func doClearpath(cmd *cobra.Command, args []string) {
 	}
 	logger.Info().Msgf("working on folder '%s'", dataPath)
 	dirFS := os.DirFS(dataPath)
-	pathElements, err := identifier.BuildPath(dirFS)
+	pathElements, err := identifier.BuildPath(dirFS, logger)
 	cobra.CheckErr(errors.Wrapf(err, "cannot build path '%s'", dataPath))
 
 	for name, newName := range pathElements.ClearIterator(clearPathAutoFlag, clearPathRegexp, clearPathRegexpReplaceFlag) {

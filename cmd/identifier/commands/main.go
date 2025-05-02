@@ -171,7 +171,7 @@ func main() {
 			*folder = filepath.Join(currDir, *folder)
 		}
 		dirFS := os.DirFS(*folder)
-		pathElements, err := identifier.BuildPath(dirFS)
+		pathElements, err := identifier.BuildPath(dirFS, nil)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("cannot build path")
 			return

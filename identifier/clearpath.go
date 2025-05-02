@@ -3,6 +3,7 @@ package identifier
 import (
 	"emperror.dev/errors"
 	"fmt"
+	"github.com/je4/utils/v2/pkg/zLogger"
 	"golang.org/x/exp/constraints"
 	"io/fs"
 	"path"
@@ -273,7 +274,7 @@ func (p *pathElement) FindDirname(re *regexp.Regexp) func(func(string) bool) {
 	}
 }
 
-func BuildPath(fsys fs.FS) (*pathElement, error) {
+func BuildPath(fsys fs.FS, logger zLogger.ZLogger) (*pathElement, error) {
 	root := NewPathElement("", true, 0, nil)
 	if err := fs.WalkDir(fsys, ".", func(pathStr string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -293,6 +294,7 @@ func BuildPath(fsys fs.FS) (*pathElement, error) {
 			curr = curr.AddSub(pathPart, d.IsDir(), size)
 		}
 		if d.IsDir() {
+			logger.Debug().Msgf("dir %s/%s", fsys, pathStr)
 			//fmt.Printf("[d] %s/%s\n", fsys, pathStr)
 			return nil
 		}
