@@ -10,6 +10,7 @@ import (
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -144,7 +145,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 					return errors.Wrapf(err, "cannot unmarshal file data from key '%s'", k)
 				}
 				logger.Info().Msgf("processing %s", data.Folder)
-				id := strings.TrimSuffix(data.Folder, "/") + "/"
+				id := url.QueryEscape(strings.TrimSuffix(data.Folder, "/") + "/")
 				folderList[id] = &identifier.RoCrateGraphElement{
 					ID:          id,
 					Type:        identifier.StringOrList{"Dataset"},
