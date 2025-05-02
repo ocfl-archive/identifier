@@ -176,12 +176,13 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 			data := folderList[id]
 			lastInd := strings.LastIndex(strings.TrimSuffix(id, "/"), "/")
 			if lastInd <= 0 {
+				logger.Debug().Msgf("no parent element for '%s'", id)
+				roCrate.AddElement(data, false)
 				return nil
 			}
 			parentID := id[:lastInd] + "/"
 			if parentElem, ok := folderList[parentID]; !ok {
-				logger.Debug().Msgf("no parent element for '%s'", id)
-				roCrate.AddElement(data, false)
+				logger.Debug().Msgf("element for '%s' not found", id)
 			} else {
 				logger.Debug().Msgf("adding '%s' to parent '%s'", id, parentID)
 				parentElem.AddChild(data, false)
