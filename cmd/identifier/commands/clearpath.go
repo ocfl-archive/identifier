@@ -84,6 +84,7 @@ func doClearpath(cmd *cobra.Command, args []string) {
 		defer os.Exit(1)
 		return
 	}
+	logger.Info().Msgf("data path: '%s'", dataPath)
 	if fi, err := os.Stat(dataPath); err != nil || !fi.IsDir() {
 		cobra.CheckErr(errors.Errorf("'%s' is not a directory", dataPath))
 	}
