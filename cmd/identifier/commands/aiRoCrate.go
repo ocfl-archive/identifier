@@ -116,7 +116,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 			return
 		}
 	} else if fi.IsDir() {
-		logger.Error().Msgf("'%s' is a directory", roCratePath)
+		logger.Error().Msgf("'%s' is a directory ", roCratePath)
 		defer os.Exit(1)
 		return
 	}
