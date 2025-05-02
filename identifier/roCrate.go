@@ -115,6 +115,21 @@ func (r *RoCrateGraphElement) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (r *RoCrateGraphElement) AddChild(data *RoCrateGraphElement, b bool) {
+	if r.HasPart == nil {
+		r.HasPart = RoCrateGraph{}
+	}
+	for _, e := range r.HasPart {
+		if e.ID == data.ID {
+			if b {
+				e = data
+			}
+			return
+		}
+	}
+	r.HasPart = append(r.HasPart, data)
+}
+
 type RoCrate struct {
 	Context json.RawMessage `json:"@context"`
 	Graph   RoCrateGraph    `json:"@graph"`

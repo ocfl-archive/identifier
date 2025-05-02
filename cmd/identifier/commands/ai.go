@@ -113,7 +113,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 
 	var badgerDB *badger.DB
 
-	output, err := identifier.NewOutput(consoleIndexListFlag || (csvIndexListFlag == "" && jsonlIndexListFlag == "" && xlsxIndexListFlag == ""), csvIndexListFlag, jsonlIndexListFlag, xlsxIndexListFlag, "ai", fieldsAI, logger)
+	output, err := identifier.NewOutput(consoleAIFlag || (csvAIFlag == "" && jsonlAIFlag == "" && xlsxAIFlag == ""), csvAIFlag, jsonlAIFlag, xlsxAIFlag, "ai", fieldsAI, logger)
 	if err != nil {
 		logger.Error().Err(err).Msg("cannot create output")
 		defer os.Exit(1)

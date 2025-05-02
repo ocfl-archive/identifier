@@ -9,6 +9,7 @@ import (
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slices"
 	"os"
 	"path/filepath"
 	"strings"
@@ -134,6 +135,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 		options.Prefix = []byte(prefix)
 		it := txn.NewIterator(options)
 		defer it.Close()
+		var folderList = map[string]*identifier.RoCrateGraphElement{}
 		for it.Seek([]byte(prefix)); it.ValidForPrefix([]byte(prefix)); it.Next() {
 			item := it.Item()
 			k := item.Key()
@@ -144,12 +146,69 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 				}
 				logger.Info().Msgf("processing %s", data.Folder)
 				id := strings.TrimSuffix(data.Folder, "/") + "/"
-				roCrate.AddElement(&identifier.RoCrateGraphElement{
+				folderList[id] = &identifier.RoCrateGraphElement{
 					ID:          id,
 					Type:        identifier.StringOrList{"Dataset"},
 					Name:        data.Title,
 					Description: data.Description,
-				}, false)
+				}
+				return nil
+			}); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		var ids = []string{}
+		for id, _ := range folderList {
+			ids = append(ids, id)
+		}
+
+		slices.SortFunc(ids, func(a, b string) int {
+			v := len(a) - len(b)
+			switch {
+			case v < 0:
+				return -1
+			case v > 0:
+				return 1
+			default:
+				return 0
+			}
+		})
+		for _, id := range ids {
+			data := folderList[id]
+			lastInd := strings.LastIndex(strings.TrimSuffix(id, "/"), "/")
+			if lastInd <= 0 {
+				return nil
+			}
+			parentID := id[:lastInd] + "/"
+			parentElem := roCrate.Get(parentID)
+			if parentElem == nil {
+				roCrate.AddElement(data, false)
+			} else {
+				parentElem.AddChild(data, false)
+			}
+		}
+		for it.Seek([]byte(prefix)); it.ValidForPrefix([]byte(prefix)); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			if err := item.Value(func(val []byte) error {
+				data := &aiResultStruct{}
+				if err := json.Unmarshal(val, data); err != nil {
+					return errors.Wrapf(err, "cannot unmarshal file data from key '%s'", k)
+				}
+
+				id := strings.TrimSuffix(data.Folder, "/")
+				lastInd := strings.LastIndex(id, "/")
+				if lastInd <= 0 {
+					return nil
+				}
+				parentID := id[:lastInd] + "/"
+				id += "/"
+
+				elem := roCrate.Get(parentID)
+				if elem == nil {
+					logger.Error().Msgf("cannot find element '%s' in roCrate", id)
+					return nil
+				}
 				return nil
 			}); err != nil {
 				return errors.WithStack(err)
