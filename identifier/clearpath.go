@@ -172,7 +172,10 @@ func (p *pathElement) ClearName() (string, bool) {
 }
 
 func (p *pathElement) ClearIterator(auto bool, regex *regexp.Regexp, replace string) func(func(string, string) bool) {
-	regexSubs := regex.NumSubexp()
+	var regexSubs int
+	if regex != nil {
+		regexSubs = regex.NumSubexp()
+	}
 	return func(yield func(string, string) bool) {
 		for _, sub := range p.subs {
 			sub.ClearIterator(auto, regex, replace)(yield)
