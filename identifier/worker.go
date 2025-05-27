@@ -173,12 +173,12 @@ func Worker(id uint, fsys fs.FS, actions []string, idx *util.Indexer, logger zLo
 		if err != nil {
 			logger.Error().Err(err).Msgf("cannot stat (%s)%s", fsys, path)
 			waiter.Done()
-			return
+			continue
 		}
 		if finfo.IsDir() {
 			logger.Error().Err(err).Msgf("cannot index (%s)%s: is a directory", fsys, path)
 			waiter.Done()
-			return
+			continue
 		}
 
 		var fData *FileData
