@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/dgraph-io/badger/v4 v4.8.0
 	github.com/dustin/go-humanize v1.0.1
-	github.com/je4/kilib v0.0.7
+	github.com/je4/kilib v0.0.8
 	github.com/je4/utils/v2 v2.0.60
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/ocfl-archive/indexer/v3 v3.0.17
