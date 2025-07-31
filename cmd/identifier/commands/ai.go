@@ -43,6 +43,7 @@ var modelAIFlag string
 var apikeyAIFlag string
 var aiQuery string
 var aiAdditionalQuery string
+var aiResultFolder int64
 
 func aiInit() {
 	aiCmd.Flags().StringVar(&dbFolderAIFlag, "database", "", "folder for database (must already exist)")
@@ -54,6 +55,7 @@ func aiInit() {
 	aiCmd.Flags().StringVar(&modelAIFlag, "model", "google-gemini-2.0-pro-exp-02-05", "model for ai")
 	aiCmd.Flags().StringVar(&apikeyAIFlag, "apikey", "%%GEMINI_API_KEY%%", "apikey for ai")
 	aiCmd.Flags().StringVar(&aiQuery, "query", "", "query for ai")
+	aiCmd.Flags().Int64Var(&aiResultFolder, "result-folder", 50, "folder number for result, if 0, all folders are used")
 	aiCmd.Flags().StringVar(&aiAdditionalQuery, "additional-query", "", "additional query for ai, will be prepended to the main query")
 	aiCmd.MarkFlagDirname("database")
 	aiCmd.MarkFlagRequired("database")
@@ -212,49 +214,54 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		return a.Folder == b.Folder
 	})
 	logger.Info().Msgf("writing %d files to csv", len(result))
-	resultBytes, err := json.Marshal(result)
-	if err != nil {
-		logger.Error().Err(err).Msg("cannot marshal result")
-		defer os.Exit(1)
-		return
-	}
-	logger.Info().Msgf("querying %s", modelAIFlag)
-	aiResult, aiUsage, err := driver.QueryWithText(context.Background(), aiQuery, []string{
-		"CSV-Datei (erste Zeile enthält die Spaltenüberschriften):\n" + bytesBuffer.String(),
-		"JSON-Datei:\n" + string(resultBytes),
-	})
-	if err != nil {
-		logger.Error().Err(err).Msg("cannot query ai")
-		defer os.Exit(1)
-		return
-	}
-	var res string
-	if matches := regexpJSON.FindStringSubmatch(strings.Join(aiResult, "\n")); len(matches) > 1 {
-		res = matches[1]
-	}
-
-	if err := json.Unmarshal([]byte(res), &result); err != nil {
-		logger.Error().Err(err).Msgf("cannot unmarshal result:\n%s", strings.Join(aiResult, "\n +++ \n"))
-		defer os.Exit(1)
-		return
-	}
-	if err := badgerDB.Update(func(txn *badger.Txn) error {
-		for _, r := range result {
-			data, err := json.Marshal(r)
-			if err != nil {
-				return errors.Wrapf(err, "cannot marshal result for '%s'", r.Folder)
-			}
-			if err := txn.Set([]byte(fmt.Sprintf("ai:%s:%s", modelAIFlag, r.Folder)), data); err != nil {
-				return errors.Wrapf(err, "cannot write result for '%s'", r.Folder)
-			}
-			output.Write([]any{r.Folder, r.Title, r.Description, r.Place, r.Date, strings.Join(r.Tags, ";")}, r)
+	for i := int64(0); i < int64(len(result))/aiResultFolder+1; i++ {
+		j := min(i*aiResultFolder+aiResultFolder, int64(len(result)))
+		if j <= i*aiResultFolder {
+			continue
 		}
-		return nil
-	}); err != nil {
-		logger.Error().Err(err).Msg("cannot write result to badger")
-	}
+		resultBytes, err := json.Marshal(result[i*aiResultFolder : j])
+		if err != nil {
+			logger.Error().Err(err).Msg("cannot marshal result")
+			defer os.Exit(1)
+			return
+		}
+		logger.Info().Msgf("querying %s", modelAIFlag)
+		aiResult, aiUsage, err := driver.QueryWithText(context.Background(), aiQuery, []string{
+			"CSV-Datei (erste Zeile enthält die Spaltenüberschriften):\n" + bytesBuffer.String(),
+			"JSON-Datei:\n" + string(resultBytes),
+		})
+		if err != nil {
+			logger.Error().Err(err).Msg("cannot query ai")
+			defer os.Exit(1)
+			return
+		}
+		var res string
+		if matches := regexpJSON.FindStringSubmatch(strings.Join(aiResult, "\n")); len(matches) > 1 {
+			res = matches[1]
+		}
 
-	_ = aiUsage
+		if err := json.Unmarshal([]byte(res), &result); err != nil {
+			logger.Error().Err(err).Msgf("cannot unmarshal result:\n%s", strings.Join(aiResult, "\n +++ \n"))
+			defer os.Exit(1)
+			return
+		}
+		if err := badgerDB.Update(func(txn *badger.Txn) error {
+			for _, r := range result {
+				data, err := json.Marshal(r)
+				if err != nil {
+					return errors.Wrapf(err, "cannot marshal result for '%s'", r.Folder)
+				}
+				if err := txn.Set([]byte(fmt.Sprintf("ai:%s:%s", modelAIFlag, r.Folder)), data); err != nil {
+					return errors.Wrapf(err, "cannot write result for '%s'", r.Folder)
+				}
+				output.Write([]any{r.Folder, r.Title, r.Description, r.Place, r.Date, strings.Join(r.Tags, ";")}, r)
+			}
+			return nil
+		}); err != nil {
+			logger.Error().Err(err).Msg("cannot write result to badger")
+		}
+		_ = aiUsage
+	}
 
 	return
 }
