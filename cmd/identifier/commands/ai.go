@@ -214,7 +214,8 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		return a.Folder == b.Folder
 	})
 	logger.Info().Msgf("writing %d files to csv", len(result))
-	for i := int64(0); i < int64(len(result))/aiResultFolder+1; i++ {
+	last := int64(len(result))/aiResultFolder + 1
+	for i := int64(0); i < last; i++ {
 		j := min(i*aiResultFolder+aiResultFolder, int64(len(result)))
 		if j <= i*aiResultFolder {
 			continue
@@ -239,14 +240,14 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		if matches := regexpJSON.FindStringSubmatch(strings.Join(aiResult, "\n")); len(matches) > 1 {
 			res = matches[1]
 		}
-
-		if err := json.Unmarshal([]byte(res), &result); err != nil {
+		var aiResultContent = []*aiResultStruct{}
+		if err := json.Unmarshal([]byte(res), &aiResultContent); err != nil {
 			logger.Error().Err(err).Msgf("cannot unmarshal result:\n%s", strings.Join(aiResult, "\n +++ \n"))
 			defer os.Exit(1)
 			return
 		}
 		if err := badgerDB.Update(func(txn *badger.Txn) error {
-			for _, r := range result {
+			for _, r := range aiResultContent {
 				data, err := json.Marshal(r)
 				if err != nil {
 					return errors.Wrapf(err, "cannot marshal result for '%s'", r.Folder)
