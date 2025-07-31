@@ -41,6 +41,7 @@ var consoleAIFlag bool
 var modelAIFlag string
 var apikeyAIFlag string
 var aiQuery string
+var aiAdditionalQuery string
 
 func aiInit() {
 	aiCmd.Flags().StringVar(&dbFolderAIFlag, "database", "", "folder for database (must already exist)")
@@ -52,6 +53,7 @@ func aiInit() {
 	aiCmd.Flags().StringVar(&modelAIFlag, "model", "google-gemini-2.0-pro-exp-02-05", "model for ai")
 	aiCmd.Flags().StringVar(&apikeyAIFlag, "apikey", "%%GEMINI_API_KEY%%", "apikey for ai")
 	aiCmd.Flags().StringVar(&aiQuery, "query", "", "query for ai")
+	aiCmd.Flags().StringVar(&aiAdditionalQuery, "additional-query", "", "additional query for ai, will be prepended to the main query")
 	aiCmd.MarkFlagDirname("database")
 	aiCmd.MarkFlagRequired("database")
 	aiCmd.MarkFlagFilename("jsonl", "jsonl", "json")
@@ -88,6 +90,28 @@ fülle diese Felder entsprechend aus. Date bitte im Format YYYY-MM-DD oder YYYY.
 Die Felder "place" und "date" sind optional, aber sollten ausgefüllt werden, wenn die Informationen verfügbar sind.
 Die Metadaten sollten in englischer Sprache verfasst sein.
 Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSON Format korrekt eingehalten wird.`
+	} else if fi, err := os.Stat(aiQuery); err == nil && !fi.IsDir() {
+		// read query from file
+		data, err := os.ReadFile(aiQuery)
+		if err != nil {
+			logger.Error().Err(err).Msgf("cannot read query from file '%s'", aiQuery)
+			defer os.Exit(1)
+			return
+		}
+		aiQuery = string(data)
+	}
+	if aiAdditionalQuery != "" {
+		if fi, err := os.Stat(aiAdditionalQuery); err == nil && !fi.IsDir() {
+			// read additional query from file
+			data, err := os.ReadFile(aiAdditionalQuery)
+			if err != nil {
+				logger.Error().Err(err).Msgf("cannot read additional query from file '%s'", aiAdditionalQuery)
+				defer os.Exit(1)
+				return
+			}
+			aiAdditionalQuery = string(data)
+		}
+		aiQuery = aiAdditionalQuery + "\n\n" + aiQuery
 	}
 	modelAIFlag = strings.ToLower(modelAIFlag)
 	modelParts := strings.SplitN(modelAIFlag, "-", 2)
