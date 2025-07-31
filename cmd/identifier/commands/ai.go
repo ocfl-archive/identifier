@@ -73,11 +73,12 @@ type aiResultStruct struct {
 	Description string
 	Place       string
 	Date        string
+	Tags        []string
 }
 
 var regexpJSON = regexp.MustCompile(`(?s)^[^{\[]*([{\[].*[}\]])[^}\]]*$`)
 
-var fieldsAI = []string{"folder", "title", "description", "place", "date"}
+var fieldsAI = []string{"folder", "title", "description", "place", "date", "tags"}
 
 func doAi(cmd *cobra.Command, args []string) {
 	if matches := envRegexp.FindStringSubmatch(apikeyAIFlag); len(matches) > 1 {
@@ -89,6 +90,7 @@ fülle die leeren Felder der "JSON-Datei" für alle dort angegebenen Folder aus.
 Falls Folder oder Dateinamen Semantik beinhalten, Nutze diese für Titel und Beschreibung. Sollten Folder oder Dateinamen Rückschlüsse auf Ort oder Datum zulassen,
 fülle diese Felder entsprechend aus. Date bitte im Format YYYY-MM-DD oder YYYY, Zeiträume werden durch YYYY - YYYY dargestellt. Achte darauf, dass die Metadaten in der JSON-Datei im korrekten Format vorliegen. 
 Die Felder "place" und "date" sind optional, aber sollten ausgefüllt werden, wenn die Informationen verfügbar sind.
+Befülle das Tags Feld mit den Tags, die für den jeweiligen Folder relevant sind. Mögliche Tags sind: "audio", "video", "text", "image", "unknown".
 Die Metadaten sollten in englischer Sprache verfasst sein.
 Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSON Format korrekt eingehalten wird.`
 	} else if fi, err := os.Stat(aiQuery); err == nil && !fi.IsDir() {
@@ -167,6 +169,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	var bytesBuffer = bytes.NewBuffer(nil)
 	var contextWriter = bufio.NewWriter(bytesBuffer)
 	var csvWriter = csv.NewWriter(contextWriter)
+	csvWriter.Comma = ';'
 	csvWriter.Write([]string{"folder", "filename", "mimetype", "pronom", "type", "subtype", "size (bytes)"})
 	if err := badgerDB.View(func(txn *badger.Txn) error {
 		options := badger.DefaultIteratorOptions
@@ -244,7 +247,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 			if err := txn.Set([]byte(fmt.Sprintf("ai:%s:%s", modelAIFlag, r.Folder)), data); err != nil {
 				return errors.Wrapf(err, "cannot write result for '%s'", r.Folder)
 			}
-			output.Write([]any{r.Folder, r.Title, r.Description, r.Place, r.Date}, r)
+			output.Write([]any{r.Folder, r.Title, r.Description, r.Place, r.Date, strings.Join(r.Tags, ";")}, r)
 		}
 		return nil
 	}); err != nil {
