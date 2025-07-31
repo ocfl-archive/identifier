@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -201,6 +202,12 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	}
 	csvWriter.Flush()
 	contextWriter.Flush()
+	slices.SortFunc(result, func(a, b *aiResultStruct) int {
+		return strings.Compare(a.Folder, b.Folder)
+	})
+	result = slices.CompactFunc(result, func(a, b *aiResultStruct) bool {
+		return a.Folder == b.Folder
+	})
 	logger.Info().Msgf("writing %d files to csv", len(result))
 	resultBytes, err := json.Marshal(result)
 	if err != nil {
