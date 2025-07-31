@@ -86,7 +86,7 @@ func doAi(cmd *cobra.Command, args []string) {
 		aiQuery = `Erstelle basierend auf der "CSV-Datei" Metadaten für jeden Folder und 
 fülle die leeren Felder der "JSON-Datei" für alle dort angegebenen Folder aus. Stelle sicher, dass jeder Folder genau einmal auftaucht.
 Falls Folder oder Dateinamen Semantik beinhalten, Nutze diese für Titel und Beschreibung. Sollten Folder oder Dateinamen Rückschlüsse auf Ort oder Datum zulassen,
-fülle diese Felder entsprechend aus. Date bitte im Format YYYY-MM-DD oder YYYY. Achte darauf, dass die Metadaten in der JSON-Datei im korrekten Format vorliegen. 
+fülle diese Felder entsprechend aus. Date bitte im Format YYYY-MM-DD oder YYYY, Zeiträume werden durch YYYY - YYYY dargestellt. Achte darauf, dass die Metadaten in der JSON-Datei im korrekten Format vorliegen. 
 Die Felder "place" und "date" sind optional, aber sollten ausgefüllt werden, wenn die Informationen verfügbar sind.
 Die Metadaten sollten in englischer Sprache verfasst sein.
 Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSON Format korrekt eingehalten wird.`
