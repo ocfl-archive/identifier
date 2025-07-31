@@ -68,11 +68,13 @@ type aiResultStruct struct {
 	Folder      string
 	Title       string
 	Description string
+	Place       string
+	Date        string
 }
 
 var regexpJSON = regexp.MustCompile(`(?s)^[^{\[]*([{\[].*[}\]])[^}\]]*$`)
 
-var fieldsAI = []string{"folder", "title", "description"}
+var fieldsAI = []string{"folder", "title", "description", "place", "date"}
 
 func doAi(cmd *cobra.Command, args []string) {
 	if matches := envRegexp.FindStringSubmatch(apikeyAIFlag); len(matches) > 1 {
@@ -81,7 +83,10 @@ func doAi(cmd *cobra.Command, args []string) {
 	if aiQuery == "" {
 		aiQuery = `Erstelle basierend auf der "CSV-Datei" Metadaten für jeden Folder und 
 fülle die leeren Felder der "JSON-Datei" für alle dort angegebenen Folder aus. Stelle sicher, dass jeder Folder genau einmal auftaucht.
-Falls Folder oder Dateinamen Semantik beinhalten, Nutze diese für Titel und Beschreibung.
+Falls Folder oder Dateinamen Semantik beinhalten, Nutze diese für Titel und Beschreibung. Sollten Folder oder Dateinamen Rückschlüsse auf Ort oder Datum zulassen,
+fülle diese Felder entsprechend aus. Date bitte im Format YYYY-MM-DD oder YYYY. Achte darauf, dass die Metadaten in der JSON-Datei im korrekten Format vorliegen. 
+Die Felder "place" und "date" sind optional, aber sollten ausgefüllt werden, wenn die Informationen verfügbar sind.
+Die Metadaten sollten in englischer Sprache verfasst sein.
 Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSON Format korrekt eingehalten wird.`
 	}
 	modelAIFlag = strings.ToLower(modelAIFlag)
@@ -195,7 +200,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	}
 
 	if err := json.Unmarshal([]byte(res), &result); err != nil {
-		logger.Error().Err(err).Msgf("cannot unmarshal result:\n%s", res)
+		logger.Error().Err(err).Msgf("cannot unmarshal result:\n%s", strings.Join(aiResult, "\n +++ \n"))
 		defer os.Exit(1)
 		return
 	}
@@ -208,7 +213,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 			if err := txn.Set([]byte(fmt.Sprintf("ai:%s:%s", modelAIFlag, r.Folder)), data); err != nil {
 				return errors.Wrapf(err, "cannot write result for '%s'", r.Folder)
 			}
-			output.Write([]any{r.Folder, r.Title, r.Description}, r)
+			output.Write([]any{r.Folder, r.Title, r.Description, r.Place, r.Date}, r)
 		}
 		return nil
 	}); err != nil {
