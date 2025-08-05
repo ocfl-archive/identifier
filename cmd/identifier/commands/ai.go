@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 )
 
 var aiCmd = &cobra.Command{
@@ -69,18 +70,24 @@ func aiInit() {
 
 var envRegexp = regexp.MustCompile(`%%([A-Z0-9_]+)%%`)
 
+type person struct {
+	Name string
+	Role string
+}
 type aiResultStruct struct {
-	Folder      string
-	Title       string
-	Description string
-	Place       string
-	Date        string
-	Tags        []string
+	Folder       string
+	Title        string
+	Description  string
+	Place        string
+	Date         string
+	Tags         []string
+	Persons      []person
+	Institutions []string
 }
 
 var regexpJSON = regexp.MustCompile(`(?s)^[^{\[]*([{\[].*[}\]])[^}\]]*$`)
 
-var fieldsAI = []string{"folder", "title", "description", "place", "date", "tags"}
+var fieldsAI = []string{"folder", "title", "description", "place", "date", "tags", "persons", "institutions"}
 
 func doAi(cmd *cobra.Command, args []string) {
 	if matches := envRegexp.FindStringSubmatch(apikeyAIFlag); len(matches) > 1 {
@@ -93,6 +100,8 @@ Falls Folder oder Dateinamen Semantik beinhalten, Nutze diese für Titel und Bes
 fülle diese Felder entsprechend aus. Date bitte im Format YYYY-MM-DD oder YYYY, Zeiträume werden durch YYYY - YYYY dargestellt. Achte darauf, dass die Metadaten in der JSON-Datei im korrekten Format vorliegen. 
 Die Felder "place" und "date" sind optional, aber sollten ausgefüllt werden, wenn die Informationen verfügbar sind.
 Befülle das Tags Feld mit den Tags, die für den jeweiligen Folder relevant sind. Mögliche Tags sind: "audio", "video", "text", "image", "unknown".
+Die Liste "Persons" enthält die Struktur Person, welche im Feld "Name" in der Art "Nachname, Vorname" (Vorname optional) aufgeführt sind und optional im Feld "Role" noch die Rolle.
+Institutionen sollten im Feld "Institutions" aufgeführt werden, falls sie vorhanden sind. Institutions ist ein String Array. Syntax für Institution ist "Name, Ort" (Ort optional).
 Die Metadaten sollten in englischer Sprache verfasst sein.
 Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSON Format korrekt eingehalten wird.`
 	} else if fi, err := os.Stat(aiQuery); err == nil && !fi.IsDir() {
@@ -147,7 +156,8 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 
 	var badgerDB *badger.DB
 
-	output, err := identifier.NewOutput(consoleAIFlag || (csvAIFlag == "" && jsonlAIFlag == "" && xlsxAIFlag == ""), csvAIFlag, jsonlAIFlag, xlsxAIFlag, "ai", fieldsAI, logger)
+	output, err := identifier.NewOutput(consoleAIFlag || (csvAIFlag == "" && jsonlAIFlag == "" && xlsxAIFlag == ""),
+		csvAIFlag, jsonlAIFlag, xlsxAIFlag, "ai", fieldsAI, logger)
 	if err != nil {
 		logger.Error().Err(err).Msg("cannot create output")
 		defer os.Exit(1)
@@ -192,7 +202,9 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 				}
 				csvWriter.Write([]string{filepath.ToSlash(fData.Folder), fData.Basename, fData.Indexer.Mimetype, fData.Indexer.Pronom, fData.Indexer.Type, fData.Indexer.Subtype, fmt.Sprintf("%d", fData.Indexer.Size)})
 				result = append(result, &aiResultStruct{
-					Folder: filepath.ToSlash(fData.Folder),
+					Folder:       filepath.ToSlash(fData.Folder),
+					Persons:      make([]person, 0),
+					Institutions: make([]string, 0),
 				})
 				return nil
 			}); err != nil {
@@ -215,6 +227,19 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	})
 	logger.Info().Msgf("writing %d files to csv", len(result))
 	last := int64(len(result))/aiResultFolder + 1
+	var cache = []string{}
+	var contextStrs = []string{}
+	if last > 1 {
+		cache = append(cache, "CSV-Datei (erste Zeile enthält die Spaltenüberschriften):\n"+bytesBuffer.String())
+		if err := driver.CreateCache(context.Background(), cache, time.Minute*30); err != nil {
+			logger.Error().Err(err).Msg("cannot create cache for ai driver")
+			os.Exit(1)
+			return
+		}
+		defer driver.ClearCache(context.Background())
+	} else {
+		contextStrs = append(contextStrs, "CSV-Datei (erste Zeile enthält die Spaltenüberschriften):\n"+bytesBuffer.String())
+	}
 	for i := int64(0); i < last; i++ {
 		j := min(i*aiResultFolder+aiResultFolder, int64(len(result)))
 		if j <= i*aiResultFolder {
@@ -227,10 +252,9 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 			return
 		}
 		logger.Info().Msgf("querying %s", modelAIFlag)
-		aiResult, aiUsage, err := driver.QueryWithText(context.Background(), aiQuery, []string{
-			"CSV-Datei (erste Zeile enthält die Spaltenüberschriften):\n" + bytesBuffer.String(),
-			"JSON-Datei:\n" + string(resultBytes),
-		})
+		aiResult, aiUsage, err := driver.QueryWithText(context.Background(), aiQuery,
+			append(contextStrs, "JSON-Datei:\n"+string(resultBytes)))
+
 		if err != nil {
 			logger.Error().Err(err).Msg("cannot query ai")
 			defer os.Exit(1)
@@ -255,7 +279,19 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 				if err := txn.Set([]byte(fmt.Sprintf("ai:%s:%s", modelAIFlag, r.Folder)), data); err != nil {
 					return errors.Wrapf(err, "cannot write result for '%s'", r.Folder)
 				}
-				output.Write([]any{r.Folder, r.Title, r.Description, r.Place, r.Date, strings.Join(r.Tags, ";")}, r)
+				persons := ""
+				for _, p := range r.Persons {
+					if p.Name != "" {
+						persons += p.Name
+					}
+					if p.Role != "" {
+						persons += " (" + p.Role + ")"
+					}
+					persons += " -- "
+				}
+				persons = strings.TrimSuffix(persons, " -- ")
+				institutions := strings.Join(r.Institutions, " -- ")
+				output.Write([]any{r.Folder, r.Title, r.Description, r.Place, r.Date, strings.Join(r.Tags, ";"), persons, institutions}, r)
 			}
 			return nil
 		}); err != nil {
