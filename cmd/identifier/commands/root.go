@@ -2,13 +2,17 @@ package commands
 
 import (
 	"crypto/tls"
-	"emperror.dev/errors"
 	"fmt"
+	"io"
+	"os"
+	"runtime/debug"
+	"strings"
+
+	"emperror.dev/errors"
 	"github.com/BurntSushi/toml"
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/config"
 	"github.com/ocfl-archive/identifier/identifier"
-	"github.com/ocfl-archive/identifier/version"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -16,20 +20,28 @@ import (
 	ublogger "gitlab.switch.ch/ub-unibas/go-ublogger/v2"
 	"go.ub.unibas.ch/cloud/certloader/v2/pkg/loader"
 	"golang.org/x/exp/slices"
-	"io"
-	"os"
-	"strings"
 )
 
 var appname = "identifier"
 
+func Commit() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return setting.Value
+			}
+		}
+	}
+	return ""
+}
+
 var rootCmd = &cobra.Command{
-	Use:   appname,
-	Short: "identifier is a tool for technical metadata identification",
+	Version: Commit(),
+	Use:     appname,
+	Short:   "identifier is a tool for technical metadata identification",
 	Long: `A tool for technical metadata identification bases on indexer.
 source code is available at: https://github.com/ocfl-archive/identifier
 by Jürgen Enge (University Library Basel, juergen@info-age.net)`,
-	Version: fmt.Sprintf("%s '%s' (%s)", version.Version, version.ShortCommit(), version.Date),
 	Run: func(cmd *cobra.Command, args []string) {
 		if showConfig {
 			toml.NewEncoder(os.Stdout).Encode(conf)
