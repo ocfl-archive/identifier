@@ -4,10 +4,17 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"emperror.dev/errors"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strings"
+	"time"
+
+	"emperror.dev/errors"
 	"github.com/dgraph-io/badger/v4"
 	badgerOptions "github.com/dgraph-io/badger/v4/options"
 	"github.com/je4/kilib/pkg/gemini"
@@ -16,12 +23,6 @@ import (
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
-	"regexp"
-	"slices"
-	"strings"
-	"time"
 )
 
 var aiCmd = &cobra.Command{
@@ -66,24 +67,11 @@ func aiInit() {
 
 	aiRoCrateInit()
 	aiCmd.AddCommand(aiRoCrateCmd)
+	aiListInit()
+	aiCmd.AddCommand(aiListCmd)
 }
 
 var envRegexp = regexp.MustCompile(`%%([A-Z0-9_]+)%%`)
-
-type person struct {
-	Name string
-	Role string
-}
-type aiResultStruct struct {
-	Folder       string
-	Title        string
-	Description  string
-	Place        string
-	Date         string
-	Tags         []string
-	Persons      []person
-	Institutions []string
-}
 
 var regexpJSON = regexp.MustCompile(`(?s)^[^{\[]*([{\[].*[}\]])[^}\]]*$`)
 
@@ -177,7 +165,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	defer badgerDB.Close()
 
 	var prefix = "file:" + prefixAIFlag
-	var result = []*aiResultStruct{}
+	var result = []*identifier.AIResultStruct{}
 	var bytesBuffer = bytes.NewBuffer(nil)
 	var contextWriter = bufio.NewWriter(bytesBuffer)
 	var csvWriter = csv.NewWriter(contextWriter)
@@ -201,9 +189,9 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 					return errors.Errorf("no indexer data for '%s'", fData.Path)
 				}
 				csvWriter.Write([]string{filepath.ToSlash(fData.Folder), fData.Basename, fData.Indexer.Mimetype, fData.Indexer.Pronom, fData.Indexer.Type, fData.Indexer.Subtype, fmt.Sprintf("%d", fData.Indexer.Size)})
-				result = append(result, &aiResultStruct{
+				result = append(result, &identifier.AIResultStruct{
 					Folder:       filepath.ToSlash(fData.Folder),
-					Persons:      make([]person, 0),
+					Persons:      make([]identifier.AIPerson, 0),
 					Institutions: make([]string, 0),
 				})
 				return nil
@@ -219,10 +207,10 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	}
 	csvWriter.Flush()
 	contextWriter.Flush()
-	slices.SortFunc(result, func(a, b *aiResultStruct) int {
+	slices.SortFunc(result, func(a, b *identifier.AIResultStruct) int {
 		return strings.Compare(a.Folder, b.Folder)
 	})
-	result = slices.CompactFunc(result, func(a, b *aiResultStruct) bool {
+	result = slices.CompactFunc(result, func(a, b *identifier.AIResultStruct) bool {
 		return a.Folder == b.Folder
 	})
 	logger.Info().Msgf("writing %d files to csv", len(result))
@@ -264,7 +252,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		if matches := regexpJSON.FindStringSubmatch(strings.Join(aiResult, "\n")); len(matches) > 1 {
 			res = matches[1]
 		}
-		var aiResultContent = []*aiResultStruct{}
+		var aiResultContent = []*identifier.AIResultStruct{}
 		if err := json.Unmarshal([]byte(res), &aiResultContent); err != nil {
 			logger.Error().Err(err).Msgf("cannot unmarshal result:\n%s", strings.Join(aiResult, "\n +++ \n"))
 			defer os.Exit(1)

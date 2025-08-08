@@ -1,14 +1,15 @@
 package identifier
 
 import (
-	"emperror.dev/errors"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"github.com/je4/utils/v2/pkg/zLogger"
-	"github.com/tealeg/xlsx/v3"
 	"os"
 	"time"
+
+	"emperror.dev/errors"
+	"github.com/je4/utils/v2/pkg/zLogger"
+	"github.com/tealeg/xlsx/v3"
 )
 
 func NewOutput(console bool, csvPath string, jsonlPath string, xlsxPath string, name string, fields []string, logger zLogger.ZLogger) (*Output, error) {

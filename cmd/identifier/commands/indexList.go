@@ -1,14 +1,15 @@
 package commands
 
 import (
-	"emperror.dev/errors"
 	"fmt"
-	"github.com/je4/utils/v2/pkg/checksum"
-	"github.com/ocfl-archive/identifier/identifier"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"emperror.dev/errors"
+	"github.com/je4/utils/v2/pkg/checksum"
+	"github.com/ocfl-archive/identifier/identifier"
+	"github.com/spf13/cobra"
 )
 
 var csvIndexListFlag string
@@ -119,7 +120,7 @@ func doindexList(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	if err := badgerIterator.Iterate(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
+	if err := badgerIterator.IterateIndex(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
 		var hit bool
 		hit = (emptyIndexListFlag && fData.Size == 0) ||
 			(duplicatesIndexListFlag && fData.Duplicate) ||

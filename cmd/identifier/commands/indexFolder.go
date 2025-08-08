@@ -108,7 +108,7 @@ func doindexFolders(cmd *cobra.Command, args []string) {
 	}()
 
 	var folders = identifier.NewPathElement("", true, 0, nil)
-	if err := badgerIterator.Iterate(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
+	if err := badgerIterator.IterateIndex(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
 		pathStr := path.Clean(filepath.ToSlash(fData.Path))
 		pathParts := strings.Split(pathStr, "/")
 		curr := folders

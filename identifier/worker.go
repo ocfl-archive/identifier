@@ -1,18 +1,9 @@
 package identifier
 
 import (
-	"emperror.dev/errors"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"github.com/dgraph-io/badger/v4"
-	human "github.com/dustin/go-humanize"
-	"github.com/je4/utils/v2/pkg/checksum"
-	"github.com/je4/utils/v2/pkg/zLogger"
-	"github.com/ocfl-archive/indexer/v3/pkg/indexer"
-	"github.com/ocfl-archive/indexer/v3/pkg/util"
-	"github.com/tealeg/xlsx/v3"
-	"golang.org/x/exp/slices"
 	"io"
 	"io/fs"
 	"os"
@@ -22,6 +13,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"emperror.dev/errors"
+	"github.com/dgraph-io/badger/v4"
+	human "github.com/dustin/go-humanize"
+	"github.com/je4/utils/v2/pkg/checksum"
+	"github.com/je4/utils/v2/pkg/zLogger"
+	"github.com/ocfl-archive/indexer/v3/pkg/util"
+	"github.com/tealeg/xlsx/v3"
+	"golang.org/x/exp/slices"
 )
 
 var serialWriterLock sync.Mutex
@@ -154,17 +154,6 @@ func isDup(t string) bool {
 	copy(hashes[i+1:], hashes[i:])
 	hashes[i] = t
 	return false
-}
-
-type FileData struct {
-	Path      string            `json:"path"`
-	Folder    string            `json:"folder"`
-	Basename  string            `json:"basename"`
-	Size      int64             `json:"size"`
-	Duplicate bool              `json:"duplicate"`
-	LastMod   int64             `json:"lastmod"`
-	Indexer   *indexer.ResultV2 `json:"indexer"`
-	LastSeen  int64             `json:"lastseen"`
 }
 
 func Worker(id uint, fsys fs.FS, actions []string, idx *util.Indexer, logger zLogger.ZLogger, jobs <-chan string, results chan<- string, badgerDB *badger.DB, startTime int64, waiter *sync.WaitGroup) {

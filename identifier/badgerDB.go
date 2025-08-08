@@ -1,12 +1,13 @@
 package identifier
 
 import (
-	"emperror.dev/errors"
 	"encoding/json"
+	"runtime"
+
+	"emperror.dev/errors"
 	"github.com/dgraph-io/badger/v4"
 	badgerOptions "github.com/dgraph-io/badger/v4/options"
 	"github.com/je4/utils/v2/pkg/zLogger"
-	"runtime"
 )
 
 func NewBadgerIterator(dbFolderPath string, readOnly bool, logger zLogger.ZLogger) (*BadgerIterator, error) {
@@ -42,7 +43,40 @@ func (r *BadgerIterator) Close() error {
 	return nil
 }
 
-func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove bool, err error)) error {
+func (r *BadgerIterator) IterateAI(prefix string, do func(fData *AIResultStruct) (remove bool, err error)) error {
+	if err := r.Iterate(prefix, func(key, value []byte) (remove bool, err error) {
+		fData := &AIResultStruct{}
+		if err := json.Unmarshal(value, fData); err != nil {
+			return false, errors.Wrapf(err, "cannot unmarshal data for key '%s': %s", string(key), string(value))
+		}
+		remove, err = do(fData)
+		if err != nil {
+			return false, errors.Wrapf(err, "cannot iterate data for key '%s': %s", string(key), string(value))
+		}
+		return remove, nil
+	}); err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+func (r *BadgerIterator) IterateIndex(prefix string, do func(fData *FileData) (remove bool, err error)) error {
+	if err := r.Iterate(prefix, func(key, value []byte) (remove bool, err error) {
+		fData := &FileData{}
+		if err := json.Unmarshal(value, fData); err != nil {
+			return false, errors.Wrapf(err, "cannot unmarshal data for key '%s': %s", string(key), string(value))
+		}
+		remove, err = do(fData)
+		if err != nil {
+			return false, errors.Wrapf(err, "cannot iterate data for key '%s': %s", string(key), string(value))
+		}
+		return remove, nil
+	}); err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+func (r *BadgerIterator) Iterate(prefix string, do func(key, value []byte) (remove bool, err error)) error {
 	var removeKeys = [][]byte{}
 	if err := r.badgerDB.View(func(txn *badger.Txn) error {
 		options := badger.DefaultIteratorOptions
@@ -56,11 +90,7 @@ func (r *BadgerIterator) Iterate(prefix string, do func(fData *FileData) (remove
 			item := it.Item()
 			k := item.KeyCopy(nil)
 			if err := item.Value(func(val []byte) error {
-				fData := &FileData{}
-				if err := json.Unmarshal(val, fData); err != nil {
-					return err
-				}
-				remove, err := do(fData)
+				remove, err := do(k, val)
 				if err != nil {
 					return err
 				}

@@ -1,19 +1,20 @@
 package commands
 
 import (
-	"emperror.dev/errors"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"emperror.dev/errors"
 	"github.com/dgraph-io/badger/v4"
 	badgerOptions "github.com/dgraph-io/badger/v4/options"
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
-	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 const defaultRoCrate = `{
@@ -148,7 +149,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 			item := it.Item()
 			k := item.Key()
 			if err := item.Value(func(val []byte) error {
-				data := &aiResultStruct{}
+				data := &identifier.AIResultStruct{}
 				if err := json.Unmarshal(val, data); err != nil {
 					return errors.Wrapf(err, "cannot unmarshal file data from key '%s'", k)
 				}

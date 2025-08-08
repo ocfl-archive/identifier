@@ -97,7 +97,7 @@ func doindexMime(cmd *cobra.Command, args []string) {
 
 	var statSize = map[string]int64{}
 	var statCount = map[string]int64{}
-	if err := badgerIterator.Iterate(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
+	if err := badgerIterator.IterateIndex(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
 		var hit bool
 		hit = (emptyIndexMimeFlag && fData.Size == 0) ||
 			(duplicatesIndexMimeFlag && fData.Duplicate) ||
