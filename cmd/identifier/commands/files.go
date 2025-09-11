@@ -1,13 +1,14 @@
 package commands
 
 import (
-	"emperror.dev/errors"
 	"fmt"
-	"github.com/ocfl-archive/identifier/identifier"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"emperror.dev/errors"
+	"github.com/ocfl-archive/identifier/identifier"
+	"github.com/spf13/cobra"
 )
 
 var filesRemoveFlag bool
