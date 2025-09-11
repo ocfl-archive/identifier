@@ -17,7 +17,7 @@ var dbFolderAiListFlag string
 var prefixAiListFlag string
 var consoleAiListFlag bool
 
-var fieldsAiList = []string{"folder", "title", "description", "place", "date", "tags", "persons", "institutions"}
+var fieldsAiList = []string{"key", "folder", "title", "description", "place", "date", "tags", "persons", "institutions"}
 
 var aiListCmd = &cobra.Command{
 	Use:     "list",
@@ -53,7 +53,15 @@ func doaiList(cmd *cobra.Command, args []string) {
 	if prefixAiListFlag != "" {
 		fmt.Printf("#including prefix \"%s\"\n", prefixAiListFlag)
 	}
-	output, err := identifier.NewOutput(consoleAiListFlag || (csvAiListFlag == "" && jsonlAiListFlag == "" && xlsxAiListFlag == ""), csvAiListFlag, jsonlAiListFlag, xlsxAiListFlag, "list", fieldsAiList, logger)
+	output, err := identifier.NewOutput(
+		consoleAiListFlag || (csvAiListFlag == "" && jsonlAiListFlag == "" && xlsxAiListFlag == ""),
+		csvAiListFlag,
+		jsonlAiListFlag,
+		xlsxAiListFlag,
+		"list",
+		fieldsAiList,
+		logger,
+	)
 	if err != nil {
 		logger.Error().Err(err).Msg("cannot create output")
 		defer os.Exit(1)
@@ -77,12 +85,13 @@ func doaiList(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	if err := badgerIterator.IterateAI("ai:"+prefixAIFlag, func(aiData *identifier.AIResultStruct) (remove bool, err error) {
+	if err := badgerIterator.IterateAI("ai:"+prefixAIFlag, func(key string, aiData *identifier.AIResultStruct) (remove bool, err error) {
 		var persons []string
 		for _, person := range aiData.Persons {
 			persons = append(persons, person.String())
 		}
 		if err := output.Write([]any{
+			key,
 			aiData.Folder,
 			aiData.Title,
 			aiData.Description,
