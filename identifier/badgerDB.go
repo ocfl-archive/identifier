@@ -43,13 +43,13 @@ func (r *BadgerIterator) Close() error {
 	return nil
 }
 
-func (r *BadgerIterator) IterateAI(prefix string, do func(fData *AIResultStruct) (remove bool, err error)) error {
+func (r *BadgerIterator) IterateAI(prefix string, do func(key string, fData *AIResultStruct) (remove bool, err error)) error {
 	if err := r.Iterate(prefix, func(key, value []byte) (remove bool, err error) {
 		fData := &AIResultStruct{}
 		if err := json.Unmarshal(value, fData); err != nil {
 			return false, errors.Wrapf(err, "cannot unmarshal data for key '%s': %s", string(key), string(value))
 		}
-		remove, err = do(fData)
+		remove, err = do(string(key), fData)
 		if err != nil {
 			return false, errors.Wrapf(err, "cannot iterate data for key '%s': %s", string(key), string(value))
 		}
