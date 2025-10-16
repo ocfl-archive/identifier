@@ -1,15 +1,16 @@
 package identifier
 
 import (
-	"emperror.dev/errors"
 	"fmt"
-	"github.com/je4/utils/v2/pkg/zLogger"
-	"golang.org/x/exp/constraints"
 	"io/fs"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"emperror.dev/errors"
+	"github.com/je4/utils/v2/pkg/zLogger"
+	"golang.org/x/exp/constraints"
 )
 
 var directCleanRuleAll = regexp.MustCompile("[\u0000-\u001f\u007f\u0020\u0085\u00a0\u1680\u2000-\u200f\u2028\u2029\u202f\u205f\u3000\n\t*?:\\[\\]\"<>|(){}&'!\\;#@]")
@@ -294,7 +295,7 @@ func BuildPath(fsys fs.FS, logger zLogger.ZLogger) (*pathElement, error) {
 			curr = curr.AddSub(pathPart, d.IsDir(), size)
 		}
 		if d.IsDir() {
-			logger.Debug().Msgf("dir %s/%s", fsys, pathStr)
+			logger.Debug().Msgf("dir %v/%s", fsys, pathStr)
 			//fmt.Printf("[d] %s/%s\n", fsys, pathStr)
 			return nil
 		}

@@ -1,13 +1,14 @@
 package commands
 
 import (
-	"emperror.dev/errors"
 	"fmt"
-	"github.com/ocfl-archive/identifier/identifier"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"emperror.dev/errors"
+	"github.com/ocfl-archive/identifier/identifier"
+	"github.com/spf13/cobra"
 )
 
 var foldersRemoveFlag bool
@@ -65,7 +66,7 @@ func dofolders(cmd *cobra.Command, args []string) {
 	logger.Info().Msgf("working on folder '%s'", dataPath)
 	logger.Info().Msgf("using regexp \"%s\"", foldersRegexpFlag)
 	dirFS := os.DirFS(dataPath)
-	pathElements, err := identifier.BuildPath(dirFS, nil)
+	pathElements, err := identifier.BuildPath(dirFS, logger)
 	cobra.CheckErr(errors.Wrapf(err, "cannot build paths from '%s'", dataPath))
 
 	for name := range pathElements.FindDirname(folderRegexp) {

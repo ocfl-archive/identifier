@@ -1,9 +1,15 @@
 package commands
 
 import (
-	"emperror.dev/errors"
 	"encoding/csv"
 	"fmt"
+	"io/fs"
+	"os"
+	"regexp"
+	"sync"
+	"time"
+
+	"emperror.dev/errors"
 	"github.com/dgraph-io/badger/v4"
 	badgerOptions "github.com/dgraph-io/badger/v4/options"
 	"github.com/je4/utils/v2/pkg/zLogger"
@@ -11,11 +17,6 @@ import (
 	"github.com/ocfl-archive/indexer/v3/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/tealeg/xlsx/v3"
-	"io/fs"
-	"os"
-	"regexp"
-	"sync"
-	"time"
 )
 
 var dbFolderFlag string
@@ -218,6 +219,7 @@ func doIndex(cmd *cobra.Command, args []string) {
 			//			logger.Info().Msgf("[f] %s/%s\n", dirFS, path)
 
 			waiter.Add(1)
+			logger.Debug().Msgf("adding %s", path)
 			jobs <- path
 
 			return nil
