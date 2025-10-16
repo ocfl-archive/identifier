@@ -65,7 +65,7 @@ func dofiles(cmd *cobra.Command, args []string) {
 	}
 	logger.Info().Msgf("working on folder '%s'", dataPath)
 	dirFS := os.DirFS(dataPath)
-	pathElements, err := identifier.BuildPath(dirFS, nil)
+	pathElements, err := identifier.BuildPath(dirFS, logger)
 	cobra.CheckErr(errors.Wrapf(err, "cannot build paths from '%s'", dataPath))
 
 	for name := range pathElements.FindBasename(fileRegexp) {
