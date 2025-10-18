@@ -221,8 +221,12 @@ func (p *pathElement) ClearIterator(auto bool, regex *regexp.Regexp, replace str
 			} else {
 				newName = cleanedName
 			}
-			if !yield(strings.TrimPrefix(p.String(), "/"), strings.TrimPrefix(newName, "/")) {
-				return
+			_old := strings.TrimPrefix(p.String(), "/")
+			_new := strings.TrimPrefix(newName, "/")
+			if _old != _new {
+				if !yield(_old, _new) {
+					return
+				}
 			}
 		}
 	}
