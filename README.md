@@ -1,6 +1,9 @@
 # identifier
 identifies technical metadata on filesystems
 
-## installation
+## Installation
 
-`go install github.com/ocfl-archive/identifier/cmd/identifier@latest`
+```shell
+go install github.com/ocfl-archive/identifier/cmd/identifier@latest
+```
+
