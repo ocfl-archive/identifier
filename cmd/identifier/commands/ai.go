@@ -52,7 +52,7 @@ func aiInit() {
 	aiCmd.Flags().StringVar(&jsonlAIFlag, "jsonl", "", "write ai to jsonl file")
 	aiCmd.Flags().StringVar(&xlsxAIFlag, "xlsx", "", "write ai to xlsx file (needs memory)")
 	aiCmd.Flags().BoolVar(&consoleAIFlag, "console", false, "write ai to console")
-	aiCmd.Flags().StringVar(&modelAIFlag, "model", "google-gemini-2.0-pro-exp-02-05", "model for ai")
+	aiCmd.Flags().StringVar(&modelAIFlag, "model", "googleai/gemini-2.5-flash", "model for ai")
 	aiCmd.Flags().StringVar(&apikeyAIFlag, "apikey", "%%GEMINI_API_KEY%%", "apikey for ai")
 	aiCmd.Flags().StringVar(&aiQuery, "query", "", "query for ai")
 	aiCmd.Flags().Int64Var(&aiResultFolder, "result-folder", 50, "folder number for result, if 0, all folders are used")
