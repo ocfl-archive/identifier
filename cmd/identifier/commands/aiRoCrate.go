@@ -153,6 +153,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 				if err := json.Unmarshal(val, data); err != nil {
 					return errors.Wrapf(err, "cannot unmarshal file data from key '%s'", k)
 				}
+				data.Folder = filepath.ToSlash(data.Folder)
 				logger.Info().Msgf("processing %s", data.Folder)
 				id := strings.Replace(url.PathEscape(strings.TrimSuffix(data.Folder, "/")+"/"), "%2F", "/", -1)
 				folderList[id] = &identifier.RoCrateGraphElement{
@@ -198,7 +199,13 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 			*/
 			var getParent func(id string) (*identifier.RoCrateGraphElement, string)
 			getParent = func(id string) (*identifier.RoCrateGraphElement, string) {
+				if id == "./" {
+					return nil, ""
+				}
 				pID := getParentID(id)
+				if pID == "" {
+					pID = "./"
+				}
 				parentElem, ok := folderList[pID]
 				if ok {
 					logger.Debug().Msgf("parent element '%s' of '%s' found", pID, id)
