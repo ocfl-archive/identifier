@@ -1,13 +1,14 @@
 package config
 
 import (
+	"os"
+	"os/user"
+	"path/filepath"
+
 	"emperror.dev/errors"
 	"github.com/BurntSushi/toml"
 	"github.com/je4/utils/v2/pkg/stashconfig"
 	"github.com/ocfl-archive/indexer/v3/pkg/indexer"
-	"os"
-	"os/user"
-	"path/filepath"
 )
 
 type Config struct {
