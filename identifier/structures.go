@@ -7,14 +7,14 @@ import (
 )
 
 type FileData struct {
-	Path      string            `json:"path"`
-	Folder    string            `json:"folder"`
-	Basename  string            `json:"basename"`
-	Size      int64             `json:"size"`
-	Duplicate bool              `json:"duplicate"`
-	LastMod   int64             `json:"lastmod"`
-	Indexer   *indexer.ResultV2 `json:"indexer"`
-	LastSeen  int64             `json:"lastseen"`
+	Path      string            `json:"path,omitempty"`
+	Folder    string            `json:"folder,omitempty"`
+	Basename  string            `json:"basename,omitempty"`
+	Size      int64             `json:"size,omitempty"`
+	Duplicate bool              `json:"duplicate,omitempty"`
+	LastMod   int64             `json:"lastmod,omitempty"`
+	Indexer   *indexer.ResultV2 `json:"indexer,omitempty"`
+	LastSeen  int64             `json:"lastseen,omitempty"`
 }
 
 type AIPerson struct {
