@@ -1,25 +1,23 @@
 package commands
 
 import (
-	"bufio"
-	"bytes"
 	"context"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
-	"time"
 
 	"emperror.dev/errors"
 	"github.com/dgraph-io/badger/v4"
 	badgerOptions "github.com/dgraph-io/badger/v4/options"
-	"github.com/je4/kilib/pkg/gemini"
-	"github.com/je4/kilib/pkg/ki"
-	"github.com/je4/kilib/pkg/openai"
+	"github.com/firebase/genkit/go/ai"
+	"github.com/firebase/genkit/go/core/api"
+	"github.com/firebase/genkit/go/genkit"
+	oai "github.com/firebase/genkit/go/plugins/compat_oai"
+	"github.com/firebase/genkit/go/plugins/compat_oai/openai"
+	"github.com/firebase/genkit/go/plugins/googlegenai"
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
@@ -82,8 +80,7 @@ func doAi(cmd *cobra.Command, args []string) {
 		apikeyAIFlag = os.Getenv(matches[1])
 	}
 	if aiQuery == "" {
-		aiQuery = `Erstelle basierend auf der "CSV-Datei" Metadaten für jeden Folder und 
-fülle die leeren Felder der "JSON-Datei" für alle dort angegebenen Folder aus. Stelle sicher, dass jeder Folder genau einmal auftaucht.
+		aiQuery = `Erstelle Metadaten basierend auf de "INPUT-JSON" Metadaten für jeden Folder, der in "FOLDERLIST-JSON" gelistet ist. Stelle sicher, dass jeder Folder genau einmal auftaucht.
 Falls Folder oder Dateinamen Semantik beinhalten, Nutze diese für Titel und Beschreibung. Sollten Folder oder Dateinamen Rückschlüsse auf Ort oder Datum zulassen,
 fülle diese Felder entsprechend aus. Date bitte im Format YYYY-MM-DD oder YYYY, Zeiträume werden durch YYYY - YYYY dargestellt. Achte darauf, dass die Metadaten in der JSON-Datei im korrekten Format vorliegen. 
 Die Felder "place" und "date" sind optional, aber sollten ausgefüllt werden, wenn die Informationen verfügbar sind.
@@ -116,31 +113,33 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		aiQuery = aiAdditionalQuery + "\n\n" + aiQuery
 	}
 	modelAIFlag = strings.ToLower(modelAIFlag)
-	modelParts := strings.SplitN(modelAIFlag, "-", 2)
+	modelParts := strings.SplitN(modelAIFlag, "/", 2)
 	if len(modelParts) != 2 {
 		logger.Error().Msgf("model '%s' must consist of driver- and modelname", modelAIFlag)
 		defer os.Exit(1)
 		return
 	}
-	driverName := modelParts[0]
-	if driverName == "google" {
-		driverName = "gemini"
-	}
-	var driver ki.Interface
-	var err error
-	switch strings.ToLower(driverName) {
-	case "gemini":
-		driver, err = gemini.NewDriver(modelParts[1], apikeyAIFlag)
+	var plugins = []api.Plugin{}
+	provider := modelParts[0]
+	switch provider {
+	case "ceda":
+		plugins = append(plugins, &oai.OpenAICompatible{
+			Provider: provider,
+			APIKey:   apikeyAIFlag,
+			BaseURL:  "https://llm-api-h200.ceda.unibas.ch/litellm",
+		})
 	case "openai":
-		driver, err = openai.NewDriver(modelParts[1], apikeyAIFlag)
+		plugins = append(plugins, &openai.OpenAI{})
+	case "googleai":
+		plugins = append(plugins, &googlegenai.GoogleAI{})
 	default:
-		err = errors.Errorf("unknown driver '%s'", modelParts[0])
+		logger.Fatal().Msgf("unknown provider '%s'", provider)
 	}
-	if err != nil {
-		logger.Error().Err(err).Msgf("cannot create driver for '%s'", modelAIFlag)
-		defer os.Exit(1)
-		return
-	}
+	g := genkit.Init(
+		context.Background(),
+		genkit.WithPlugins(plugins...),
+		genkit.WithDefaultModel(modelAIFlag),
+	)
 
 	var badgerDB *badger.DB
 
@@ -164,13 +163,40 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	}
 	defer badgerDB.Close()
 
+	type fileList []*identifier.FileData
+	type resultList []*identifier.AIResultStruct
+	flow := genkit.DefineFlow(g, "identifier", func(ctx context.Context, input fileList) (*resultList, error) {
+		folderList := []string{}
+		for _, file := range input {
+			folderList = append(folderList, file.Folder)
+		}
+		slices.Sort(folderList)
+		folderList = slices.Compact(folderList)
+		folderBytes, err := json.Marshal(folderList)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot marshal folderlist: %v", folderList)
+		}
+		inputBytes, err := json.Marshal(input)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot marshal input: %v", input)
+		}
+		// Create a prompt based on the input
+		prompt := fmt.Sprintf("%s\n---\nINPUT-JSON: %s\n---\nFOLDERLIST-JSON: %s", aiQuery, string(inputBytes), string(folderBytes))
+
+		// Generate structured recipe data using the same schema
+		resultData, _, err := genkit.GenerateData[resultList](ctx, g,
+			ai.WithPrompt(prompt),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate recipe: %w", err)
+		}
+
+		return resultData, nil
+	})
+
 	var prefix = "file:" + prefixAIFlag
-	var result = []*identifier.AIResultStruct{}
-	var bytesBuffer = bytes.NewBuffer(nil)
-	var contextWriter = bufio.NewWriter(bytesBuffer)
-	var csvWriter = csv.NewWriter(contextWriter)
-	csvWriter.Comma = ';'
-	csvWriter.Write([]string{"folder", "filename", "mimetype", "pronom", "type", "subtype", "size (bytes)"})
+	input := fileList{}
+	folderList := []string{}
 	if err := badgerDB.View(func(txn *badger.Txn) error {
 		options := badger.DefaultIteratorOptions
 		options.PrefetchValues = true
@@ -188,12 +214,12 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 				if fData.Indexer == nil {
 					return errors.Errorf("no indexer data for '%s'", fData.Path)
 				}
-				csvWriter.Write([]string{filepath.ToSlash(fData.Folder), fData.Basename, fData.Indexer.Mimetype, fData.Indexer.Pronom, fData.Indexer.Type, fData.Indexer.Subtype, fmt.Sprintf("%d", fData.Indexer.Size)})
-				result = append(result, &identifier.AIResultStruct{
-					Folder:       filepath.ToSlash(fData.Folder),
-					Persons:      make([]identifier.AIPerson, 0),
-					Institutions: make([]string, 0),
-				})
+				fData.Indexer.Metadata = map[string]any{}
+				fData.Path = ""
+				fData.LastSeen = 0
+				fData.LastMod = 0
+				folderList = append(folderList, fData.Folder)
+				input = append(input, fData)
 				return nil
 			}); err != nil {
 				return errors.WithStack(err)
@@ -205,61 +231,25 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		defer os.Exit(1)
 		return
 	}
-	csvWriter.Flush()
-	contextWriter.Flush()
-	slices.SortFunc(result, func(a, b *identifier.AIResultStruct) int {
-		return strings.Compare(a.Folder, b.Folder)
-	})
-	result = slices.CompactFunc(result, func(a, b *identifier.AIResultStruct) bool {
-		return a.Folder == b.Folder
-	})
-	logger.Info().Msgf("writing %d files to csv", len(result))
-	last := int64(len(result))/aiResultFolder + 1
-	var cache = []string{}
-	var contextStrs = []string{}
-	if last > 1 {
-		cache = append(cache, "CSV-Datei (erste Zeile enthält die Spaltenüberschriften):\n"+bytesBuffer.String())
-		if err := driver.CreateCache(context.Background(), cache, time.Minute*30); err != nil {
-			logger.Error().Err(err).Msg("cannot create cache for ai driver")
-			os.Exit(1)
-			return
-		}
-		defer driver.ClearCache(context.Background())
-	} else {
-		contextStrs = append(contextStrs, "CSV-Datei (erste Zeile enthält die Spaltenüberschriften):\n"+bytesBuffer.String())
-	}
+	slices.Sort(folderList)
+	folderList = slices.Compact(folderList)
+	logger.Info().Msgf("writing %d files to csv", len(folderList))
+	last := int64(len(folderList))/aiResultFolder + 1
 	for i := int64(0); i < last; i++ {
-		j := min(i*aiResultFolder+aiResultFolder, int64(len(result)))
+		j := min(i*aiResultFolder+aiResultFolder, int64(len(folderList)))
 		if j <= i*aiResultFolder {
 			continue
 		}
-		resultBytes, err := json.Marshal(result[i*aiResultFolder : j])
-		if err != nil {
-			logger.Error().Err(err).Msg("cannot marshal result")
-			defer os.Exit(1)
-			return
-		}
 		logger.Info().Msgf("querying %s", modelAIFlag)
-		aiResult, aiUsage, err := driver.QueryWithText(context.Background(), aiQuery,
-			append(contextStrs, "JSON-Datei:\n"+string(resultBytes)))
 
+		out, err := flow.Run(context.TODO(), input)
 		if err != nil {
 			logger.Error().Err(err).Msg("cannot query ai")
 			defer os.Exit(1)
 			return
 		}
-		var res string
-		if matches := regexpJSON.FindStringSubmatch(strings.Join(aiResult, "\n")); len(matches) > 1 {
-			res = matches[1]
-		}
-		var aiResultContent = []*identifier.AIResultStruct{}
-		if err := json.Unmarshal([]byte(res), &aiResultContent); err != nil {
-			logger.Error().Err(err).Msgf("cannot unmarshal result:\n%s", strings.Join(aiResult, "\n +++ \n"))
-			defer os.Exit(1)
-			return
-		}
 		if err := badgerDB.Update(func(txn *badger.Txn) error {
-			for _, r := range aiResultContent {
+			for _, r := range *out {
 				data, err := json.Marshal(r)
 				if err != nil {
 					return errors.Wrapf(err, "cannot marshal result for '%s'", r.Folder)
@@ -285,7 +275,6 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		}); err != nil {
 			logger.Error().Err(err).Msg("cannot write result to badger")
 		}
-		_ = aiUsage
 	}
 
 	return
