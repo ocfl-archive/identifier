@@ -1,9 +1,10 @@
 package identifier
 
 import (
-	"emperror.dev/errors"
 	"encoding/json"
 	"fmt"
+
+	"emperror.dev/errors"
 )
 
 type StringOrList []string
