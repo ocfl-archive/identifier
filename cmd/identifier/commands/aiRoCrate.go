@@ -24,10 +24,10 @@ const defaultRoCrate = `{
 		  "@type": "CreativeWork",
 		  "@id": "ro-crate-metadata.json",
 		  "conformsTo": {"@id": "https://w3id.org/ro/crate/1.1"},
-		  "about": {"@id": "./"}
+		  "about": {"@id": "."}
 		},  
 		{
-		  "@id": "./",
+		  "@id": ".",
 		  "@type": [
 			"Dataset"
 		  ],
@@ -66,7 +66,7 @@ func getParentID(id string) string {
 	if lastInd <= 0 {
 		return ""
 	}
-	return id[:lastInd] + "/"
+	return id[:lastInd]
 }
 
 func doAIRoCrate(cmd *cobra.Command, args []string) {
@@ -155,12 +155,16 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 				}
 				data.Folder = filepath.ToSlash(data.Folder)
 				logger.Info().Msgf("processing %s", data.Folder)
-				id := strings.Replace(url.PathEscape(strings.TrimSuffix(data.Folder, "/")+"/"), "%2F", "/", -1)
-				folderList[id] = &identifier.RoCrateGraphElement{
-					ID:          id,
-					Type:        identifier.StringOrList{"Dataset"},
-					Name:        data.Title,
-					Description: data.Description,
+				id := strings.Replace(url.PathEscape(strings.TrimSuffix(data.Folder, "/")), "%2F", "/", -1)
+				if elem := roCrate.Get(id); elem != nil {
+					folderList[id] = elem
+				} else {
+					folderList[id] = &identifier.RoCrateGraphElement{
+						ID:          id,
+						Type:        identifier.StringOrList{"Dataset"},
+						Name:        data.Title,
+						Description: data.Description,
+					}
 				}
 				return nil
 			}); err != nil {
@@ -199,12 +203,12 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 			*/
 			var getParent func(id string) (*identifier.RoCrateGraphElement, string)
 			getParent = func(id string) (*identifier.RoCrateGraphElement, string) {
-				if id == "./" {
+				if id == "." {
 					return nil, ""
 				}
 				pID := getParentID(id)
 				if pID == "" {
-					pID = "./"
+					pID = "."
 				}
 				parentElem, ok := folderList[pID]
 				if ok {
