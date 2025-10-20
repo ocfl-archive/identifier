@@ -2,15 +2,16 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+
 	human "github.com/dustin/go-humanize"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
 )
 
 var csvIndexFolderFlag string
@@ -109,6 +110,9 @@ func doindexFolders(cmd *cobra.Command, args []string) {
 
 	var folders = identifier.NewPathElement("", true, 0, nil)
 	if err := badgerIterator.IterateIndex(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
+		if fData.Basename == "" || fData.Indexer == nil {
+			return false, nil
+		}
 		pathStr := path.Clean(filepath.ToSlash(fData.Path))
 		pathParts := strings.Split(pathStr, "/")
 		curr := folders

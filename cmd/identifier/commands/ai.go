@@ -213,7 +213,8 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 					return errors.Wrapf(err, "cannot unmarshal file data from key '%s'", k)
 				}
 				if fData.Indexer == nil {
-					return errors.Errorf("no indexer data for '%s'", fData.Path)
+					logger.Error().Msgf("no indexer data for '%s'", fData.Path)
+					return nil
 				}
 				fData.Indexer.Metadata = map[string]any{}
 				fData.Path = ""
