@@ -99,7 +99,7 @@ func doindexMime(cmd *cobra.Command, args []string) {
 	var statSize = map[string]int64{}
 	var statCount = map[string]int64{}
 	if err := badgerIterator.IterateIndex(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
-		if fData.Path == "" {
+		if fData.Basename == "" || fData.Indexer == nil {
 			return false, nil
 		}
 		var hit bool
