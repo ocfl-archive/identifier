@@ -2,12 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"regexp"
+
 	"github.com/dustin/go-humanize"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
-	"os"
-	"regexp"
 )
 
 var csvIndexMimeFlag string
@@ -98,6 +99,9 @@ func doindexMime(cmd *cobra.Command, args []string) {
 	var statSize = map[string]int64{}
 	var statCount = map[string]int64{}
 	if err := badgerIterator.IterateIndex(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
+		if fData.Path == "" {
+			return false, nil
+		}
 		var hit bool
 		hit = (emptyIndexMimeFlag && fData.Size == 0) ||
 			(duplicatesIndexMimeFlag && fData.Duplicate) ||
