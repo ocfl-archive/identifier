@@ -129,10 +129,6 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 			BaseURL:  "https://llm-api-h200.ceda.unibas.ch/litellm",
 		}
 		plugins = append(plugins, cedaPlugin)
-		actions := cedaPlugin.ListActions(context.TODO())
-		for _, action := range actions {
-			fmt.Printf("[%s] %s: %s\n", action.Key, action.Name, action.Description)
-		}
 	case "openai":
 		plugins = append(plugins, &openai.OpenAI{})
 	case "googleai":
