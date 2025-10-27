@@ -85,7 +85,7 @@ func doaiList(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	if err := badgerIterator.IterateAI("ai:"+prefixAIFlag, func(key string, aiData *identifier.AIResultStruct) (remove bool, err error) {
+	if err := badgerIterator.IterateAI("ai:"+prefixAiListFlag, func(key string, aiData *identifier.AIResultStruct) (remove bool, err error) {
 		var persons []string
 		for _, person := range aiData.Persons {
 			persons = append(persons, person.String())
