@@ -1,10 +1,14 @@
 package commands
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -21,7 +25,28 @@ import (
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 )
+
+type fileList []*identifier.FileData
+type resultList []*identifier.AIResultStruct
+type folderT struct {
+	NumberOfFiles int
+	FileExcerpt   fileList
+	SubFolders    []string
+	FolderName    string
+}
+
+func (f *folderT) maxExcerpts(num int) {
+	if num > len(f.FileExcerpt) {
+		return
+	}
+	for i := len(f.FileExcerpt) - 1; i >= num; i-- {
+		index := rand.Intn(i + 1)
+		f.FileExcerpt = append(f.FileExcerpt[:index], f.FileExcerpt[index+1:]...)
+	}
+	return
+}
 
 var aiCmd = &cobra.Command{
 	Use:     "ai",
@@ -44,6 +69,7 @@ var apikeyAIFlag string
 var aiQuery string
 var aiAdditionalQuery string
 var aiResultFolder int64
+var aiMaxFiles int64
 
 func aiInit() {
 	aiCmd.Flags().StringVar(&dbFolderAIFlag, "database", "", "folder for database (must already exist)")
@@ -56,6 +82,7 @@ func aiInit() {
 	aiCmd.Flags().StringVar(&apikeyAIFlag, "apikey", "%%GEMINI_API_KEY%%", "apikey for ai")
 	aiCmd.Flags().StringVar(&aiQuery, "query", "", "query for ai")
 	aiCmd.Flags().Int64Var(&aiResultFolder, "result-folder", 50, "folder number for result, if 0, all folders are used")
+	aiCmd.Flags().Int64Var(&aiMaxFiles, "max-files", 8, "maximum number of files per folder")
 	aiCmd.Flags().StringVar(&aiAdditionalQuery, "additional-query", "", "additional query for ai, will be prepended to the main query")
 	aiCmd.MarkFlagDirname("database")
 	aiCmd.MarkFlagRequired("database")
@@ -75,6 +102,47 @@ var regexpJSON = regexp.MustCompile(`(?s)^[^{\[]*([{\[].*[}\]])[^}\]]*$`)
 
 var fieldsAI = []string{"folder", "title", "description", "place", "date", "tags", "persons", "institutions"}
 
+func addUnique[S interface{ ~[]E }, E cmp.Ordered](x S, target E) S {
+	pos, found := slices.BinarySearch(x, target)
+	if found {
+		return x
+	}
+	x = slices.Insert(x, pos, target)
+	return x
+}
+
+func addFolderFolderUnique(list map[string]*folderT, folder string, subfolder string) {
+	if _, ok := list[folder]; !ok {
+		list[folder] = &folderT{
+			NumberOfFiles: 0,
+			FileExcerpt:   fileList{},
+			SubFolders:    []string{},
+			FolderName:    folder,
+		}
+	}
+	list[folder].SubFolders = addUnique(list[folder].SubFolders, subfolder)
+}
+
+func addFolderFileUnique(list map[string]*folderT, folder string, file *identifier.FileData) {
+	if _, ok := list[folder]; !ok {
+		list[folder] = &folderT{
+			NumberOfFiles: 0,
+			FileExcerpt:   fileList{},
+			SubFolders:    []string{},
+			FolderName:    folder,
+		}
+	}
+	pos, found := slices.BinarySearchFunc(list[folder].FileExcerpt, file, func(data *identifier.FileData, data2 *identifier.FileData) int {
+		return cmp.Compare(data.Basename, data2.Basename)
+	})
+	if found {
+		return
+	}
+	list[folder].FileExcerpt = slices.Insert(list[folder].FileExcerpt, pos, file)
+	list[folder].NumberOfFiles++
+	return
+}
+
 func doAi(cmd *cobra.Command, args []string) {
 	if matches := envRegexp.FindStringSubmatch(apikeyAIFlag); len(matches) > 1 {
 		apikeyAIFlag = os.Getenv(matches[1])
@@ -82,7 +150,7 @@ func doAi(cmd *cobra.Command, args []string) {
 	if aiQuery == "" {
 		aiQuery = `Erstelle Metadaten basierend auf de "INPUT-JSON" Metadaten für jeden Folder, der in "FOLDERLIST-JSON" gelistet ist. Stelle sicher, dass jeder Folder genau einmal auftaucht.
 Falls Folder oder Dateinamen Semantik beinhalten, Nutze diese für Titel und Beschreibung. Sollten Folder oder Dateinamen Rückschlüsse auf Ort oder Datum zulassen,
-fülle diese Felder entsprechend aus. Date bitte im Format YYYY-MM-DD oder YYYY, Zeiträume werden durch YYYY - YYYY dargestellt. Achte darauf, dass die Metadaten in der JSON-Datei im korrekten Format vorliegen. 
+fülle diese Felder entsprechend aus. Date bitte im Format "YYYY-MM-DD"" oder "YYYY"", Zeiträume werden durch "YYYY - YYYY"" dargestellt. Verwende keine anderen Datierungsformate und keine Buchstaben. Achte darauf, dass die Metadaten in der JSON-Datei im korrekten Format vorliegen. 
 Die Felder "place" und "date" sind optional, aber sollten ausgefüllt werden, wenn die Informationen verfügbar sind.
 Befülle das Tags Feld mit den Tags, die für den jeweiligen Folder relevant sind. Mögliche Tags sind: "audio", "video", "text", "image", "unknown".
 Die Liste "Persons" enthält die Struktur Person, welche im Feld "Name" in der Art "Nachname, Vorname" (Vorname optional) aufgeführt sind und optional im Feld "Role" noch die Rolle.
@@ -164,22 +232,18 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	}
 	defer badgerDB.Close()
 
-	type fileList []*identifier.FileData
-	type resultList []*identifier.AIResultStruct
-	flow := genkit.DefineFlow(g, "identifier", func(ctx context.Context, input fileList) (*resultList, error) {
-		folderList := []string{}
-		for _, file := range input {
-			folderList = append(folderList, file.Folder)
-		}
-		slices.Sort(folderList)
-		folderList = slices.Compact(folderList)
-		folderBytes, err := json.Marshal(folderList)
-		if err != nil {
-			return nil, errors.Wrapf(err, "cannot marshal folderlist: %v", folderList)
-		}
+	flow := genkit.DefineFlow(g, "identifier", func(ctx context.Context, input []*folderT) (*resultList, error) {
 		inputBytes, err := json.Marshal(input)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot marshal input: %v", input)
+		}
+		folerList := []string{}
+		for _, i := range input {
+			folerList = append(folerList, i.FolderName)
+		}
+		folderBytes, err := json.Marshal(folerList)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot marshal input: %v", folerList)
 		}
 		// Create a prompt based on the input
 		prompt := fmt.Sprintf("%s\n---\nINPUT-JSON: %s\n---\nFOLDERLIST-JSON: %s", aiQuery, string(inputBytes), string(folderBytes))
@@ -196,8 +260,9 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 	})
 
 	var prefix = "file:" + prefixAIFlag
-	input := fileList{}
-	folderList := []string{}
+	// input := fileList{}
+	// folderList0 := []string{}
+	folderList := map[string]*folderT{}
 	if err := badgerDB.View(func(txn *badger.Txn) error {
 		options := badger.DefaultIteratorOptions
 		options.PrefetchValues = true
@@ -220,8 +285,18 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 				fData.Path = ""
 				fData.LastSeen = 0
 				fData.LastMod = 0
-				folderList = append(folderList, fData.Folder)
-				input = append(input, fData)
+				fData.Folder = filepath.ToSlash(fData.Folder)
+				addFolderFileUnique(folderList, fData.Folder, fData)
+
+				parts := strings.Split(fData.Folder, "/")
+				folder := ""
+				for _, part := range parts {
+					newFolder := path.Join(folder, part)
+					addFolderFolderUnique(folderList, folder, part)
+					//folderList0 = addUnique(folderList0, newFolder)
+					folder = newFolder
+				}
+
 				return nil
 			}); err != nil {
 				return errors.WithStack(err)
@@ -233,17 +308,22 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		defer os.Exit(1)
 		return
 	}
-	slices.Sort(folderList)
-	folderList = slices.Compact(folderList)
-	logger.Info().Msgf("writing %d files to csv", len(folderList))
-	last := int64(len(folderList))/aiResultFolder + 1
+	folderList0 := maps.Keys(folderList)
+	logger.Info().Msgf("writing %d folders to csv", len(folderList0))
+	last := int64(len(folderList0))/aiResultFolder + 1
 	for i := int64(0); i < last; i++ {
-		j := min(i*aiResultFolder+aiResultFolder, int64(len(folderList)))
+		j := min(i*aiResultFolder+aiResultFolder, int64(len(folderList0)))
 		if j <= i*aiResultFolder {
 			continue
 		}
 		logger.Info().Msgf("querying %s", modelAIFlag)
 
+		input := []*folderT{}
+		for k := i * aiResultFolder; k < j; k++ {
+			x := folderList[folderList0[k]]
+			x.maxExcerpts(int(aiMaxFiles))
+			input = append(input, x)
+		}
 		out, err := flow.Run(context.TODO(), input)
 		if err != nil {
 			logger.Error().Err(err).Msg("cannot query ai")
