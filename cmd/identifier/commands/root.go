@@ -8,11 +8,9 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"emperror.dev/errors"
 	"github.com/BurntSushi/toml"
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/config"
-	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -62,7 +60,6 @@ var logger zLogger.ZLogger
 var showConfig bool
 
 func initConfig() {
-	var data = []byte{}
 	// load config file
 	if persistentFlagLoglevel != "" {
 		if !slices.Contains([]string{"ERROR", "WARN", "INFO", "DEBUG"}, strings.ToUpper(persistentFlagLoglevel)) {
@@ -71,25 +68,8 @@ func initConfig() {
 			return
 		}
 	}
-	if persistentFlagConfigFile != "" {
-		var err error
-		persistentFlagConfigFile, err = identifier.Fullpath(persistentFlagConfigFile)
-		if err != nil {
-			cobra.CheckErr(errors.Errorf("cannot convert '%s' to absolute path: %v", persistentFlagConfigFile, err))
-			return
-		}
-		log.Info().Msgf("loading configuration from %s", persistentFlagConfigFile)
-		data, err = os.ReadFile(persistentFlagConfigFile)
-		if err != nil {
-			_ = rootCmd.Help()
-			log.Error().Msgf("error reading config file %s: %v\n", persistentFlagConfigFile, err)
-			os.Exit(1)
-		}
-	} else {
-		data = config.DefaultConfig
-	}
 	var err error
-	conf, err = config.LoadConfig(data)
+	conf, err = config.LoadConfig(persistentFlagConfigFile)
 	if err != nil {
 		_ = rootCmd.Help()
 		log.Error().Err(err).Msgf("cannot load config '%s'", persistentFlagConfigFile)

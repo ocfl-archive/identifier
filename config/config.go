@@ -2,8 +2,6 @@ package config
 
 import (
 	"os"
-	"os/user"
-	"path/filepath"
 
 	"emperror.dev/errors"
 	"github.com/BurntSushi/toml"
@@ -16,27 +14,26 @@ type Config struct {
 	Log     stashconfig.Config `toml:"log"`
 }
 
-func LoadConfig(tomlBytes []byte) (*Config, error) {
+func LoadConfig(configPath string) (*Config, error) {
 	var conf = &Config{
-		Indexer: &indexer.IndexerConfig{},
+		Indexer: indexer.GetDefaultConfig(),
 		Log: stashconfig.Config{
 			Level: "ERROR",
 		},
 	}
-
-	if err := toml.Unmarshal(tomlBytes, conf); err != nil {
-		return nil, errors.Wrapf(err, "Error unmarshalling config")
+	if err := toml.Unmarshal(DefaultConfig, conf); err != nil {
+		return nil, errors.Wrap(err, "cannot load default config")
 	}
-	if conf.Indexer.Siegfried.SignatureFile == "" {
-		user, err := user.Current()
-		if err != nil {
-			return nil, errors.Wrap(err, "cannot get current user")
-		}
-		fp := filepath.Join(user.HomeDir, "siegfried", "default.sig")
-		fi, err := os.Stat(fp)
-		if err == nil && !fi.IsDir() {
-			conf.Indexer.Siegfried.SignatureFile = fp
-		}
+	if configPath == "" {
+		return conf, nil
+	}
+
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return nil, errors.Wrapf(err, "config file %s does not exist", configPath)
+	}
+
+	if _, err := toml.DecodeFile(configPath, conf); err != nil {
+		return nil, errors.Wrapf(err, "Error unmarshalling config")
 	}
 	return conf, nil
 }

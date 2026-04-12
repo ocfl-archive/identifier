@@ -17,6 +17,7 @@ import (
 	"github.com/ocfl-archive/indexer/v3/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/tealeg/xlsx/v3"
+	"golang.org/x/exp/slices"
 )
 
 var dbFolderFlag string
@@ -85,11 +86,25 @@ func doIndex(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	idx, err := util.InitIndexer(conf.Indexer, logger)
+	idx, indexerActions, indexerCloser, err := util.InitIndexer(conf.Indexer, logger)
 	if err != nil {
 		logger.Error().Err(err).Msg("cannot initialize indexer")
 		defer os.Exit(1)
 		return
+	}
+	defer func() {
+		err := indexerCloser.Close()
+		if err != nil {
+			logger.Error().Err(err).Msg("error closing indexer")
+			return
+		}
+	}()
+	for _, action := range actionsFlag {
+		if !slices.Contains(indexerActions, action) {
+			logger.Error().Msgf("'%s' is not a configured indexer action", action)
+			os.Exit(1)
+			return
+		}
 	}
 
 	var badgerDB *badger.DB
@@ -112,7 +127,12 @@ func doIndex(cmd *cobra.Command, args []string) {
 			defer os.Exit(1)
 			return
 		}
-		defer badgerDB.Close()
+		defer func(badgerDB *badger.DB) {
+			err := badgerDB.Close()
+			if err != nil {
+				logger.Error().Err(err).Msg("error closing badger database")
+			}
+		}(badgerDB)
 	}
 	if csvFlag != "" {
 		if csvFile, err = os.Create(csvFlag); err != nil {
@@ -120,10 +140,18 @@ func doIndex(cmd *cobra.Command, args []string) {
 			defer os.Exit(1)
 			return
 		}
-		defer csvFile.Close()
+		defer func(csvFile *os.File) {
+			err := csvFile.Close()
+			if err != nil {
+				logger.Error().Err(err).Msg("error closing csv file")
+			}
+		}(csvFile)
 		csvWriter = csv.NewWriter(csvFile)
 		defer csvWriter.Flush()
-		csvWriter.Write(fields)
+		err := csvWriter.Write(fields)
+		if err != nil {
+			logger.Error().Err(err).Msgf("cannot write csv file '%s'", csvFlag)
+		}
 	}
 	if jsonlFlag != "" {
 		if jsonlFile, err = os.Create(jsonlFlag); err != nil {
@@ -131,7 +159,12 @@ func doIndex(cmd *cobra.Command, args []string) {
 			defer os.Exit(1)
 			return
 		}
-		defer jsonlFile.Close()
+		defer func(jsonlFile *os.File) {
+			err := jsonlFile.Close()
+			if err != nil {
+				logger.Error().Err(err).Msg("error closing jsonl file")
+			}
+		}(jsonlFile)
 	}
 	if xlsxFlag != "" {
 		// check, whether a file can be created
