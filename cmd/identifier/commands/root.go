@@ -53,6 +53,7 @@ by Jürgen Enge (University Library Basel, juergen@info-age.net)`,
 var persistentFlagConfigFile string
 var persistentFlagLogfile string
 var persistentFlagLoglevel string
+var persistentFlagAutoconfig bool
 
 var conf *config.Config
 var logger zLogger.ZLogger
@@ -81,6 +82,9 @@ func initConfig() {
 	}
 	if persistentFlagLoglevel != "" {
 		conf.Log.Level = persistentFlagLoglevel
+	}
+	if persistentFlagAutoconfig {
+		conf.Indexer.Optimize = true
 	}
 
 	var loggerTLSConfig *tls.Config
@@ -126,6 +130,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&persistentFlagConfigFile, "config", "", "config file (default is internal)")
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLogfile, "log-file", "", "log output file (default is console)")
 	rootCmd.PersistentFlags().StringVar(&persistentFlagLoglevel, "log-level", "WARN", "log level (ERROR|WARN|INFO|DEBUG)")
+	rootCmd.PersistentFlags().BoolVar(&persistentFlagAutoconfig, "autoconfig", false, "indexer autoconfig")
 	rootCmd.Flags().BoolVar(&showConfig, "show-config", false, "show configuration file")
 
 	clearpathInit()
