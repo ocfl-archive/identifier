@@ -48,7 +48,7 @@ func indexInit() {
 	indexCmd.Flags().StringVar(&jsonlFlag, "jsonl", "", "write index to jsonl file")
 	indexCmd.Flags().StringVar(&xlsxFlag, "xlsx", "", "write index to xlsx file (needs memory)")
 	indexCmd.Flags().UintVarP(&concurrentFlag, "concurrent", "n", 3, "number of concurrent workers")
-	indexCmd.Flags().StringSliceVar(&actionsFlag, "actions", []string{"siegfried", "xml"}, "actions to be performed")
+	indexCmd.Flags().StringSliceVar(&actionsFlag, "actions", []string{"siegfried", "xml", "ffprobe", "identify", "json", "xml", "tika"}, "actions to be performed")
 	indexCmd.Flags().BoolVar(&consoleFlag, "console", false, "write index to console")
 	indexCmd.MarkFlagDirname("database")
 	indexCmd.MarkFlagFilename("jsonl", "jsonl", "json")
@@ -99,13 +99,15 @@ func doIndex(cmd *cobra.Command, args []string) {
 			return
 		}
 	}()
+	newActions := make([]string, 0, len(actionsFlag))
 	for _, action := range actionsFlag {
 		if !slices.Contains(indexerActions, action) {
 			logger.Error().Msgf("'%s' is not a configured indexer action", action)
-			os.Exit(1)
-			return
+			continue
 		}
+		newActions = append(newActions, action)
 	}
+	actionsFlag = newActions
 
 	var badgerDB *badger.DB
 	var csvFile *os.File
