@@ -18,51 +18,39 @@ var clearPathRegexpReplaceFlag string
 
 var clearPathRegexp *regexp.Regexp
 
+// clearpathCmd renames files and folders to sanitize invalid or problematic filenames.
 var clearpathCmd = &cobra.Command{
 	Use:     "clearpath [path to data]",
 	Aliases: []string{},
 	Short:   "makes 'ugly' file- and foldernames 'pretty'",
-	Long: `renames file- and foldernames according to the following rules.
+	Long: `Renames file- and foldernames according to archival sanitization rules.
 
-#1 replace [\u0000-\u001F\u007F\n\r\t*:<>|{}] with '_'
-#2 remove [\uE000-\uF8FF] (private use area)
-#3 "^[~\u0009\u000a-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200f\u2028\u2029\u202f\u205f\u3000]*(.*?)[\u0009\u000a-\u000d\u0020\u0085\u00a0\u1680\u2000-\u20a0\u2028\u2029\u202f\u205f\u3000]*$" (leading/trailing spaces and ~)
-#4 replace single quotes and backtick with '
-#5 replace [“”] (double quotes) with "
-#6 replace multiple spaces with single space
-#7 replace special dash character "—" with '-'
-#8 replace leading '.' with '_'
-#8 replace leading '~' with '-'
+Rule details:
+#1 Replace [\u0000-\u001F\u007F\n\r\t*:<>|{}] with '_'
+#2 Remove [\uE000-\uF8FF] (Unicode private use area)
+#3 Strip leading and trailing whitespace/special characters
+#4 Replace single quotes and backticks with standard quotes
+#5 Replace typographic double quotes [“”] with standard quotes "
+#6 Replace multiple consecutive spaces with a single space
+#7 Replace em-dash "—" with '-'
+#8 Replace leading '.' with '_' and leading '~' with '-'
 
-This function uses the deep-first search algorithm to rename files 
-and folders in the given path to make sure, that there are no conflicts. 
+Uses depth-first (bottom-up) traversal to ensure child files and subdirectories
+are renamed before their parent folders without path collision or broken references.
 
-
-Caveat: dry-run (no --rename flag) is always recommended before renaming files on filesystem.
-`,
-	Example: appname + ` clearpath C:/daten/aiptest
-2025-03-12T11:03:21+01:00 INF dry-run: no files will be renamed timestamp="2025-03-12 11:03:21.1223634 +0100 CET m=+0.156712501"
-2025-03-12T11:03:21+01:00 INF working on folder 'C:/daten/aiptest' timestamp="2025-03-12 11:03:21.1223634 +0100 CET m=+0.156712501"
-    payload/#1    test[0]/.test{3}.txt
---> payload/#1    test[0]/_test_3_.txt
-
-    payload/#1    test[0]/~test.“new”.txt
---> payload/#1    test[0]/-test."new".txt
-
-    payload/#1    test[0]/~~test.txt
---> payload/#1    test[0]/-~test.txt
-
-    payload/#1    test[0]
---> payload/#1 test[0]`,
+Caveat: dry-run (omitting --rename) is always recommended before executing filesystem modifications.`,
+	Example: appname + ` clearpath C:/daten/aiptest --auto
+` + appname + ` clearpath C:/daten/aiptest --auto --rename
+` + appname + ` clearpath C:/daten/aiptest --regexp "\.\." --replace "." --rename`,
 	Args: cobra.ExactArgs(1),
 	Run:  doClearpath,
 }
 
 func clearpathInit() {
-	clearpathCmd.Flags().BoolVar(&clearPathAutoFlag, "auto", false, "use built in rename rules")
-	clearpathCmd.Flags().BoolVar(&clearPathRenameFlag, "rename", false, "renames the files on filesystem (if not set it's just a dry run)")
-	clearpathCmd.Flags().StringVar(&clearPathRegexpFlag, "regexp", "", "use custom regexp for renaming")
-	clearpathCmd.Flags().StringVar(&clearPathRegexpReplaceFlag, "replace", "", "replace characters for regexp")
+	clearpathCmd.Flags().BoolVar(&clearPathAutoFlag, "auto", false, "use built-in archival filename sanitization rules")
+	clearpathCmd.Flags().BoolVar(&clearPathRenameFlag, "rename", false, "renames the files on filesystem (if omitted, performs a dry-run preview)")
+	clearpathCmd.Flags().StringVar(&clearPathRegexpFlag, "regexp", "", "use custom regular expression pattern for renaming")
+	clearpathCmd.Flags().StringVar(&clearPathRegexpReplaceFlag, "replace", "", "replacement string for custom regular expression matches")
 	clearpathCmd.MarkFlagsRequiredTogether("regexp", "replace")
 	clearpathCmd.MarkFlagsOneRequired("auto", "regexp")
 }

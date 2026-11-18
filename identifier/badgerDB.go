@@ -10,6 +10,9 @@ import (
 	"github.com/je4/utils/v2/pkg/zLogger"
 )
 
+// NewBadgerIterator opens an existing Badger key-value database at dbFolderPath and returns
+// a BadgerIterator configured for reading (and optionally deleting) indexed entries.
+// On Windows platforms, readOnly is automatically forced to false due to underlying file-locking requirements.
 func NewBadgerIterator(dbFolderPath string, readOnly bool, logger zLogger.ZLogger) (*BadgerIterator, error) {
 	if runtime.GOOS == "windows" {
 		readOnly = false
@@ -25,17 +28,19 @@ func NewBadgerIterator(dbFolderPath string, readOnly bool, logger zLogger.ZLogge
 		if reader.badgerDB, err = badger.Open(badger.DefaultOptions(dbFolderPath).WithReadOnly(readOnly).WithCompression(badgerOptions.Snappy).WithLogger(zLogger.NewZWrapper(logger))); err != nil {
 			return nil, errors.Wrapf(err, "cannot open badger database in '%s'", dbFolderPath)
 		}
-		// defer badgerDB.Close()
 	}
 	return reader, nil
 }
 
+// BadgerIterator wraps a BadgerDB database instance, providing typed iteration methods
+// for file index records and AI-generated folder descriptions, with optional key deletion.
 type BadgerIterator struct {
 	badgerDB *badger.DB
 	readOnly bool
 	logger   zLogger.ZLogger
 }
 
+// Close gracefully closes the underlying BadgerDB instance and flushes buffers.
 func (r *BadgerIterator) Close() error {
 	if r.badgerDB != nil {
 		return errors.WithStack(r.badgerDB.Close())
@@ -43,6 +48,9 @@ func (r *BadgerIterator) Close() error {
 	return nil
 }
 
+// IterateAI iterates over all AI metadata records whose keys match the given prefix
+// (e.g., "ai:<model>:"). The callback receives the unmarshaled AIResultStruct for each record.
+// If the callback returns remove=true and the iterator is in read-write mode, the key will be deleted.
 func (r *BadgerIterator) IterateAI(prefix string, do func(key string, fData *AIResultStruct) (remove bool, err error)) error {
 	if err := r.Iterate(prefix, func(key, value []byte) (remove bool, err error) {
 		fData := &AIResultStruct{}
@@ -60,6 +68,9 @@ func (r *BadgerIterator) IterateAI(prefix string, do func(key string, fData *AIR
 	return nil
 }
 
+// IterateIndex iterates over all file index records whose keys match the given prefix
+// (e.g., "file:"). The callback receives the unmarshaled FileData for each record.
+// If the callback returns remove=true and the iterator is in read-write mode, the key will be deleted.
 func (r *BadgerIterator) IterateIndex(prefix string, do func(fData *FileData) (remove bool, err error)) error {
 	if err := r.Iterate(prefix, func(key, value []byte) (remove bool, err error) {
 		fData := &FileData{}
@@ -76,6 +87,10 @@ func (r *BadgerIterator) IterateIndex(prefix string, do func(fData *FileData) (r
 	}
 	return nil
 }
+
+// Iterate performs a raw key-value scan across keys starting with prefix.
+// The callback `do` is invoked for each item. If `do` returns remove=true, the key is collected
+// and subsequently deleted in batched transactions (if readOnly is false).
 func (r *BadgerIterator) Iterate(prefix string, do func(key, value []byte) (remove bool, err error)) error {
 	var removeKeys = [][]byte{}
 	if err := r.badgerDB.View(func(txn *badger.Txn) error {

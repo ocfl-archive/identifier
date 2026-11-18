@@ -23,27 +23,33 @@ var consoleIndexMimeFlag bool
 
 var fieldsIndexMime = []string{"mimetype", "count", "size (bytes)", "size"}
 
+// indexMimeCmd computes aggregate file format distribution statistics grouped by MIME type
+// from the indexed Badger database cache.
 var indexMimeCmd = &cobra.Command{
 	Use:     "mime",
 	Aliases: []string{},
 	Short:   "get mime statistics from database",
-	Long: `get mimestatistics from database
-`,
-	Example: ``,
-	Args:    nil,
-	Run:     doindexMime,
+	Long: `Get MIME type statistics from database.
+Aggregates file counts and total byte volume per MIME type (e.g. application/pdf, audio/x-wav, image/jpeg).`,
+	Example: `Show MIME statistics in console table:
+` + appname + ` index mime --database C:/temp/live --console
+
+Export MIME statistics to CSV and Excel:
+` + appname + ` index mime --database C:/temp/live --csv C:/temp/mime.csv --xlsx C:/temp/mime.xlsx`,
+	Args: nil,
+	Run:  doindexMime,
 }
 
 func indexMimeInit() {
-	indexMimeCmd.Flags().StringVar(&dbFolderIndexMimeFlag, "database", "", "folder for database (must already exist)")
-	indexMimeCmd.Flags().StringVar(&csvIndexMimeFlag, "csv", "", "write indexMime to csv file")
-	indexMimeCmd.Flags().StringVar(&jsonlIndexMimeFlag, "jsonl", "", "write indexMime to jsonl file")
-	indexMimeCmd.Flags().StringVar(&xlsxIndexMimeFlag, "xlsx", "", "write indexMime to xlsx file (needs memory)")
-	indexMimeCmd.Flags().BoolVar(&emptyIndexMimeFlag, "empty", false, "include empty files")
-	indexMimeCmd.Flags().StringVar(&regexpIndexMimeFlag, "regexp", "", "include files matching regular expression")
-	indexMimeCmd.Flags().BoolVar(&duplicatesIndexMimeFlag, "duplicates", false, "include duplicate files")
-	indexMimeCmd.Flags().StringVar(&prefixIndexMimeFlag, "prefix", "", "folder path prefix")
-	indexMimeCmd.Flags().BoolVar(&consoleIndexMimeFlag, "console", false, "write index to console")
+	indexMimeCmd.Flags().StringVar(&dbFolderIndexMimeFlag, "database", "", "folder for Badger database storage (must already exist)")
+	indexMimeCmd.Flags().StringVar(&csvIndexMimeFlag, "csv", "", "write MIME statistics to CSV file")
+	indexMimeCmd.Flags().StringVar(&jsonlIndexMimeFlag, "jsonl", "", "write MIME statistics to JSONL file")
+	indexMimeCmd.Flags().StringVar(&xlsxIndexMimeFlag, "xlsx", "", "write MIME statistics to Excel XLSX file")
+	indexMimeCmd.Flags().BoolVar(&emptyIndexMimeFlag, "empty", false, "filter for empty files")
+	indexMimeCmd.Flags().StringVar(&regexpIndexMimeFlag, "regexp", "", "filter files whose basename matches regular expression")
+	indexMimeCmd.Flags().BoolVar(&duplicatesIndexMimeFlag, "duplicates", false, "filter for duplicate files")
+	indexMimeCmd.Flags().StringVar(&prefixIndexMimeFlag, "prefix", "", "filter files by folder path prefix")
+	indexMimeCmd.Flags().BoolVar(&consoleIndexMimeFlag, "console", false, "print rendered MIME statistics table to console")
 	indexMimeCmd.MarkFlagRequired("database")
 }
 

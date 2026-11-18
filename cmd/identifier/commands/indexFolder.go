@@ -21,50 +21,22 @@ var consoleIndexFolderFlag bool
 var prefixIndexFolderFlag string
 var dbIndexFolderFlag string
 
-// var fields = []string{"path", "folder", "basename", "size", "lastmod", "duplicate", "mimetype", "pronom", "type", "subtype", "checksum", "width", "height", "duration"}
+// folderFields defines standard column headers for directory statistics.
 var folderFields = []string{"Files", "Folders", "Bytes", "Size", "Path"}
+
+// indexFoldersCmd calculates and displays aggregated folder statistics (file count, subfolder count, byte size)
+// from the indexed Badger database cache without scanning the filesystem.
 var indexFoldersCmd = &cobra.Command{
 	Use:     "folders",
 	Aliases: []string{},
 	Short:   "get folder statistics from database",
-	Long: `get folder statistics from database
-`,
-	Example: `Show folder and type statistics
-Show logging entries up to WARN level.
+	Long: `Get folder statistics from database.
+Aggregates file counts, subfolder counts, and total byte sizes hierarchically from BadgerDB.`,
+	Example: `Show folder statistics in console:
+` + appname + ` index folders --database C:/temp/live --console
 
-` + appname + ` --log-level WARN index list --database c:\temp\indexerbadger --types --folders
-#including all files
-+--------------------------------------------------------------------+
-| Folder statistics                                                  |
-+-------+---------+--------------+--------+--------------------------+
-| FILES | FOLDERS | SIZE (BYTES) |   SIZE | FOLDER                   |
-+-------+---------+--------------+--------+--------------------------+
-|     1 |       1 |         7193 | 7.2 kB | /meta/schemas            |
-|     3 |       2 |       239817 | 240 kB | /meta                    |
-|     9 |       1 |     15042369 |  15 MB | /payload/#1    audio     |
-|    10 |       1 |    172858675 | 173 MB | /payload/image           |
-|     1 |       1 |            0 |    0 B | /payload/test[0]/folders |
-[...]
-
-List duplicatres metadata to csv and jsonl file and show them on console.
-Show logging entries up to INFO level.
-
-` + appname + ` --log-level INFO index list --database c:\temp\indexerbadger --jsonl c:/temp/identify.jsonl --csv c:/temp/identify.csv --console --duplicates
-#including duplicate files
-2025-03-13T18:08:39+01:00 INF All 4 tables opened in 1ms
- timestamp="2025-03-13 18:08:39.2911666 +0100 CET m=+0.111345601"
-2025-03-13T18:08:39+01:00 INF Discard stats nextEmptySlot: 0
- timestamp="2025-03-13 18:08:39.2911666 +0100 CET m=+0.111345601"
-2025-03-13T18:08:39+01:00 INF Set nextTxnTs to 920 timestamp="2025-03-13 18:08:39.2911666 +0100 CET m=+0.111345601"
-2025-03-13T18:08:39+01:00 INF Deleting empty file: c:\temp\indexerbadger\000063.vlog timestamp="2025-03-13 18:08:39.2911666 +0100 CET m=+0.111345601"
-2025-03-13T18:08:39+01:00 INF found payload/image/IMG_6914.bmp timestamp="2025-03-13 18:08:39.2911666 +0100 CET m=+0.111345601"
-'payload/image/IMG_6914.bmp' - 46802b2518037cd7c76a7cf121845136b0a703c5245aafbfbdd602cfe879de4ff76d8fc723f71cb056ba6401e1aaaa6dab3fc798e4ccdde654b49f51a7d0aeff
-           [fmt/116 - image/bmp] 37 MB
-2025-03-13T18:08:39+01:00 INF Lifetime L0 stalled for: 0s
- timestamp="2025-03-13 18:08:39.2911666 +0100 CET m=+0.111345601"
-2025-03-13T18:08:39+01:00 INF
-Level 0 [ ]: NumTables: 03. Size: 68 KiB of 0 B. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 64 MiB
-[...]`,
+Export folder statistics to CSV and Excel:
+` + appname + ` index folders --database C:/temp/live --csv C:/temp/folders.csv --xlsx C:/temp/folders.xlsx`,
 	Args: cobra.NoArgs,
 	Run:  doindexFolders,
 }

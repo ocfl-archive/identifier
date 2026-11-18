@@ -1,13 +1,9 @@
+// Package main is the entry point for the identifier CLI application.
 package main
 
 import "github.com/ocfl-archive/identifier/cmd/identifier/commands"
 
-/*
-func init() {
-	os.Setenv("SIEGFRIED_HOME", "c:/temp")
-}
-*/
-
+// main executes the root Cobra command for identifier.
 func main() {
 	commands.Execute()
 }

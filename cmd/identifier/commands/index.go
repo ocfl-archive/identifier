@@ -28,28 +28,34 @@ var consoleFlag bool
 var concurrentFlag uint
 var actionsFlag []string
 
+// Fields defines the standard column headings for exported technical metadata tables.
 var fields = []string{"path", "folder", "basename", "size", "lastmod", "duplicate", "mimetype", "pronom", "type", "subtype", "checksum", "width", "height", "duration"}
 
+// indexCmd crawls a directory tree, executes technical metadata identification actions in parallel,
+// detects duplicate files by SHA-512 checksum, stores results in a Badger key-value database,
+// and optionally outputs reports to CSV, JSONL, XLSX, and the console.
 var indexCmd = &cobra.Command{
 	Use:     "index [path to data]",
 	Aliases: []string{},
 	Short:   "retrieves technical metadata from files",
-	Long: `retrieves technical metadata from files
-Persistent output can be written to a badger database, which will allow additional operations without reindexing the files.
-`,
-	Example: ``,
-	Args:    cobra.ExactArgs(1),
-	Run:     doIndex,
+	Long: `Retrieves technical metadata from files.
+Crawls the filesystem and runs configured indexer tools (Siegfried, FFprobe, ImageMagick identify, Apache Tika, XML/JSON validators).
+Persistent results can be cached to a BadgerDB directory, which enables fast incremental re-indexing
+and instant offline statistics (folders, MIME types, PRONOM IDs, duplicates) without re-scanning.`,
+	Example: `Index a folder, write to BadgerDB cache, and export reports:
+` + appname + ` index C:/daten/aiptest --database C:/temp/live --jsonl C:/temp/index.jsonl --csv C:/temp/index.csv --xlsx C:/temp/index.xlsx --console --concurrent 4`,
+	Args: cobra.ExactArgs(1),
+	Run:  doIndex,
 }
 
 func indexInit() {
-	indexCmd.Flags().StringVar(&dbFolderFlag, "database", "", "folder for database (must already exist)")
-	indexCmd.Flags().StringVar(&csvFlag, "csv", "", "write index to csv file")
-	indexCmd.Flags().StringVar(&jsonlFlag, "jsonl", "", "write index to jsonl file")
-	indexCmd.Flags().StringVar(&xlsxFlag, "xlsx", "", "write index to xlsx file (needs memory)")
-	indexCmd.Flags().UintVarP(&concurrentFlag, "concurrent", "n", 1, "number of concurrent workers")
-	indexCmd.Flags().StringSliceVar(&actionsFlag, "actions", []string{"siegfried", "xml", "ffprobe", "identify", "json", "tika"}, "actions to be performed")
-	indexCmd.Flags().BoolVar(&consoleFlag, "console", false, "write index to console")
+	indexCmd.Flags().StringVar(&dbFolderFlag, "database", "", "folder for Badger database storage (must already exist)")
+	indexCmd.Flags().StringVar(&csvFlag, "csv", "", "write technical metadata index to CSV file")
+	indexCmd.Flags().StringVar(&jsonlFlag, "jsonl", "", "write technical metadata index to JSONL file")
+	indexCmd.Flags().StringVar(&xlsxFlag, "xlsx", "", "write technical metadata index to Excel XLSX file")
+	indexCmd.Flags().UintVarP(&concurrentFlag, "concurrent", "n", 1, "number of concurrent worker goroutines")
+	indexCmd.Flags().StringSliceVar(&actionsFlag, "actions", []string{"siegfried", "xml", "ffprobe", "identify", "json", "tika"}, "indexer actions to execute")
+	indexCmd.Flags().BoolVar(&consoleFlag, "console", false, "print indexed files to console")
 	indexCmd.MarkFlagDirname("database")
 	indexCmd.MarkFlagFilename("jsonl", "jsonl", "json")
 	indexCmd.MarkFlagFilename("csv", "csv")
@@ -60,7 +66,6 @@ func indexInit() {
 	indexPronomInit()
 	indexMimeInit()
 	indexCmd.AddCommand(indexListCmd, indexFoldersCmd, indexPronomCmd, indexMimeCmd)
-
 }
 
 func doIndex(cmd *cobra.Command, args []string) {

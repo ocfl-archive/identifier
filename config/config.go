@@ -1,3 +1,4 @@
+// Package config defines the application configuration structures and TOML loader.
 package config
 
 import (
@@ -9,11 +10,19 @@ import (
 	"github.com/ocfl-archive/indexer/v3/pkg/indexer"
 )
 
+// Config holds the top-level configuration for the identifier tool,
+// including indexer action settings and structured logging options (such as Logstash integration).
 type Config struct {
-	Indexer *indexer.IndexerConfig
-	Log     stashconfig.Config `toml:"log"`
+	// Indexer configures the underlying technical metadata indexer actions (Siegfried, FFprobe, ImageMagick, Tika, etc.).
+	Indexer *indexer.IndexerConfig `toml:"indexer"`
+
+	// Log configures logging level, output file, and remote logstash/TLS settings.
+	Log stashconfig.Config `toml:"log"`
 }
 
+// LoadConfig loads the application configuration.
+// If configPath is empty, it returns the built-in default configuration embedded in minimal.toml.
+// If configPath is provided, it loads the default configuration and overrides it with values from the TOML file.
 func LoadConfig(configPath string) (*Config, error) {
 	var conf = &Config{
 		Indexer: indexer.GetDefaultConfig(),

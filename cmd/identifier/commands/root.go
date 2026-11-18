@@ -1,3 +1,4 @@
+// Package commands implements the CLI commands and flags using the Cobra framework.
 package commands
 
 import (
@@ -22,6 +23,7 @@ import (
 
 var appname = "identifier"
 
+// Commit retrieves the Git commit hash from embedded build information.
 func Commit() string {
 	if info, ok := debug.ReadBuildInfo(); ok {
 		for _, setting := range info.Settings {
@@ -37,8 +39,8 @@ var rootCmd = &cobra.Command{
 	Version: Commit(),
 	Use:     appname,
 	Short:   "identifier is a tool for technical metadata identification",
-	Long: `A tool for technical metadata identification bases on indexer.
-source code is available at: https://github.com/ocfl-archive/identifier
+	Long: `A tool for technical metadata identification based on indexer.
+Source code is available at: https://github.com/ocfl-archive/identifier
 by Jürgen Enge (University Library Basel, juergen@info-age.net)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if showConfig {
@@ -49,7 +51,7 @@ by Jürgen Enge (University Library Basel, juergen@info-age.net)`,
 	},
 }
 
-// all possible flags of all modules go here
+// Global persistent flags across commands.
 var persistentFlagConfigFile string
 var persistentFlagLogfile string
 var persistentFlagLoglevel string
@@ -60,8 +62,9 @@ var logger zLogger.ZLogger
 
 var showConfig bool
 
+// initConfig initializes configuration loading and sets up structured logging (console/file/Logstash).
 func initConfig() {
-	// load config file
+	// validate and load config
 	if persistentFlagLoglevel != "" {
 		if !slices.Contains([]string{"ERROR", "WARN", "INFO", "DEBUG"}, strings.ToUpper(persistentFlagLoglevel)) {
 			log.Error().Msgf("log level '%s' not valid. please use \"ERROR\", \"WARN\", \"INFO\" or \"DEBUG\"", persistentFlagLoglevel)
@@ -116,7 +119,7 @@ func initConfig() {
 		defer _logfile.Close()
 	}
 
-	l2 := _logger.With().Timestamp().Logger() //.Output(output)
+	l2 := _logger.With().Timestamp().Logger()
 	logger = &l2
 	logger.Debug().Msgf("logger with level %s created", conf.Log.Level)
 
@@ -124,7 +127,6 @@ func initConfig() {
 }
 
 func init() {
-
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&persistentFlagConfigFile, "config", "", "config file (default is internal)")
@@ -140,6 +142,8 @@ func init() {
 	aiInit()
 	rootCmd.AddCommand(clearpathCmd, filesCmd, foldersCmd, indexCmd, aiCmd)
 }
+
+// Execute is the main entry point to parse CLI arguments and execute the corresponding command.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)

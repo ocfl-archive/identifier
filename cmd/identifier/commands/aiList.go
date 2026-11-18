@@ -19,23 +19,30 @@ var consoleAiListFlag bool
 
 var fieldsAiList = []string{"key", "folder", "title", "description", "place", "date", "tags", "persons", "institutions"}
 
+// aiListCmd reads cached AI description records from BadgerDB and outputs them to CSV, JSONL, XLSX, or console.
 var aiListCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{},
 	Short:   "get AI metadata from database",
-	Long:    `get AI metadata from database`,
-	Example: ``,
-	Args:    cobra.NoArgs,
-	Run:     doaiList,
+	Long: `Get AI metadata from database.
+Retrieves previously generated LLM descriptions (title, description, place, date, tags, persons, institutions)
+from the BadgerDB storage without re-invoking the AI model APIs.`,
+	Example: `List all AI descriptions from BadgerDB to console:
+` + appname + ` ai list --database C:/temp/live --console
+
+Export stored AI descriptions to CSV and Excel:
+` + appname + ` ai list --database C:/temp/live --csv C:/temp/ai_export.csv --xlsx C:/temp/ai_export.xlsx`,
+	Args: cobra.NoArgs,
+	Run:  doaiList,
 }
 
 func aiListInit() {
-	aiListCmd.Flags().StringVar(&dbFolderAiListFlag, "database", "", "folder for database (must already exist)")
-	aiListCmd.Flags().StringVar(&csvAiListFlag, "csv", "", "write aiList to csv file")
-	aiListCmd.Flags().StringVar(&jsonlAiListFlag, "jsonl", "", "write aiList to jsonl file")
-	aiListCmd.Flags().StringVar(&xlsxAiListFlag, "xlsx", "", "write aiList to xlsx file (needs memory)")
-	aiListCmd.Flags().StringVar(&prefixAiListFlag, "prefix", "", "folder path prefix")
-	aiListCmd.Flags().BoolVar(&consoleAiListFlag, "console", false, "write ai to console")
+	aiListCmd.Flags().StringVar(&dbFolderAiListFlag, "database", "", "folder for Badger database storage (must already exist)")
+	aiListCmd.Flags().StringVar(&csvAiListFlag, "csv", "", "write AI metadata list to CSV file")
+	aiListCmd.Flags().StringVar(&jsonlAiListFlag, "jsonl", "", "write AI metadata list to JSONL file")
+	aiListCmd.Flags().StringVar(&xlsxAiListFlag, "xlsx", "", "write AI metadata list to Excel XLSX file")
+	aiListCmd.Flags().StringVar(&prefixAiListFlag, "prefix", "", "filter records by folder path prefix")
+	aiListCmd.Flags().BoolVar(&consoleAiListFlag, "console", false, "print AI metadata records to console")
 	aiListCmd.MarkFlagRequired("database")
 }
 

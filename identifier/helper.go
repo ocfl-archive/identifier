@@ -1,13 +1,17 @@
 package identifier
 
 import (
-	"emperror.dev/errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"emperror.dev/errors"
 )
 
+// Fullpath converts a relative or absolute path into a cleaned, forward-slash-separated absolute path.
+// It handles platform-specific semantics across Windows (including drive letters and UNC paths)
+// and Unix operating systems.
 func Fullpath(path string) (string, error) {
 	path = filepath.ToSlash(filepath.Clean(path))
 	if path == "" {

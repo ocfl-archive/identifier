@@ -23,27 +23,33 @@ var consoleIndexPronomFlag bool
 
 var fieldsIndexPronom = []string{"pronom", "count", "size (bytes)", "size"}
 
+// indexPronomCmd computes aggregate file format distribution statistics grouped by PRONOM identifier
+// (e.g. fmt/141, fmt/18, fmt/276) from the indexed Badger database cache.
 var indexPronomCmd = &cobra.Command{
 	Use:     "pronom",
 	Aliases: []string{},
 	Short:   "get pronom statistics from database",
-	Long: `get pronomstatistics from database
-`,
-	Example: ``,
-	Args:    nil,
-	Run:     doindexPronom,
+	Long: `Get PRONOM statistics from database.
+Aggregates file counts and total byte volume per National Archives PRONOM format registry ID (e.g. fmt/18, fmt/276, x-fmt/421).`,
+	Example: `Show PRONOM statistics in console table:
+` + appname + ` index pronom --database C:/temp/live --console
+
+Export PRONOM statistics to CSV and Excel:
+` + appname + ` index pronom --database C:/temp/live --csv C:/temp/pronom.csv --xlsx C:/temp/pronom.xlsx`,
+	Args: nil,
+	Run:  doindexPronom,
 }
 
 func indexPronomInit() {
-	indexPronomCmd.Flags().StringVar(&dbFolderIndexPronomFlag, "database", "", "folder for database (must already exist)")
-	indexPronomCmd.Flags().StringVar(&csvIndexPronomFlag, "csv", "", "write indexPronom to csv file")
-	indexPronomCmd.Flags().StringVar(&jsonlIndexPronomFlag, "jsonl", "", "write indexPronom to jsonl file")
-	indexPronomCmd.Flags().StringVar(&xlsxIndexPronomFlag, "xlsx", "", "write indexPronom to xlsx file (needs memory)")
-	indexPronomCmd.Flags().BoolVar(&emptyIndexPronomFlag, "empty", false, "include empty files")
-	indexPronomCmd.Flags().StringVar(&regexpIndexPronomFlag, "regexp", "", "include files matching regular expression")
-	indexPronomCmd.Flags().BoolVar(&duplicatesIndexPronomFlag, "duplicates", false, "include duplicate files")
-	indexPronomCmd.Flags().StringVar(&prefixIndexPronomFlag, "prefix", "", "folder path prefix")
-	indexPronomCmd.Flags().BoolVar(&consoleIndexPronomFlag, "console", false, "write index to console")
+	indexPronomCmd.Flags().StringVar(&dbFolderIndexPronomFlag, "database", "", "folder for Badger database storage (must already exist)")
+	indexPronomCmd.Flags().StringVar(&csvIndexPronomFlag, "csv", "", "write PRONOM statistics to CSV file")
+	indexPronomCmd.Flags().StringVar(&jsonlIndexPronomFlag, "jsonl", "", "write PRONOM statistics to JSONL file")
+	indexPronomCmd.Flags().StringVar(&xlsxIndexPronomFlag, "xlsx", "", "write PRONOM statistics to Excel XLSX file")
+	indexPronomCmd.Flags().BoolVar(&emptyIndexPronomFlag, "empty", false, "filter for empty files")
+	indexPronomCmd.Flags().StringVar(&regexpIndexPronomFlag, "regexp", "", "filter files whose basename matches regular expression")
+	indexPronomCmd.Flags().BoolVar(&duplicatesIndexPronomFlag, "duplicates", false, "filter for duplicate files")
+	indexPronomCmd.Flags().StringVar(&prefixIndexPronomFlag, "prefix", "", "filter files by folder path prefix")
+	indexPronomCmd.Flags().BoolVar(&consoleIndexPronomFlag, "console", false, "print rendered PRONOM statistics table to console")
 	indexPronomCmd.MarkFlagRequired("database")
 }
 

@@ -17,6 +17,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// defaultRoCrate provides a baseline RO-Crate 1.1 JSON-LD template.
 const defaultRoCrate = `{
 	"@context": "https://w3id.org/ro/crate/1.1/context",
 	"@graph": [
@@ -36,14 +37,19 @@ const defaultRoCrate = `{
 	]
 }`
 
+// aiRoCrateCmd updates or creates a Research Object Crate metadata document (ro-crate-metadata.json)
+// by embedding AI-generated semantic descriptions, folder datasets, and file part references.
 var aiRoCrateCmd = &cobra.Command{
 	Use:     "ro-crate [path to data]",
 	Aliases: []string{},
 	Short:   "writes AI Descriptions to Ro-Crate",
-	Long:    `writes AI Descriptions to Ro-Crate`,
-	Example: ``,
-	Args:    cobra.ExactArgs(1),
-	Run:     doAIRoCrate,
+	Long: `Writes AI descriptions and hierarchy metadata to an RO-Crate 1.1 metadata document (ro-crate-metadata.json).
+Creates the metadata document if it does not exist, attaches Dataset entities for folders with AI titles and descriptions,
+and links files and subfolders into parent-child relationships via hasPart.`,
+	Example: `Write AI descriptions to RO-Crate:
+` + appname + ` ai ro-crate C:/daten/aiptest --database C:/temp/live --model "googleai/gemini-2.5-flash"`,
+	Args: cobra.ExactArgs(1),
+	Run:  doAIRoCrate,
 }
 
 var dbFolderAIRoCrateFlag string
@@ -51,9 +57,9 @@ var prefixAIRoCrateFlag string
 var modelAIRoCrateFlag string
 
 func aiRoCrateInit() {
-	aiRoCrateCmd.Flags().StringVar(&dbFolderAIRoCrateFlag, "database", "", "folder for database (must already exist)")
-	aiRoCrateCmd.Flags().StringVar(&prefixAIRoCrateFlag, "prefix", "", "folder path prefix")
-	aiRoCrateCmd.Flags().StringVar(&modelAIRoCrateFlag, "model", "google-gemini-2.0-pro-exp-02-05", "model for aiRoCrate")
+	aiRoCrateCmd.Flags().StringVar(&dbFolderAIRoCrateFlag, "database", "", "folder for Badger database storage (must already exist)")
+	aiRoCrateCmd.Flags().StringVar(&prefixAIRoCrateFlag, "prefix", "", "folder path prefix filter")
+	aiRoCrateCmd.Flags().StringVar(&modelAIRoCrateFlag, "model", "googleai/gemini-2.5-flash", "LLM model namespace used to retrieve AI descriptions from BadgerDB")
 	aiRoCrateCmd.MarkFlagDirname("database")
 	aiRoCrateCmd.MarkFlagRequired("database")
 	aiRoCrateCmd.MarkFlagDirname("prefix")

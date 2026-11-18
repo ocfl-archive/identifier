@@ -28,8 +28,14 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// fileList is a slice of indexed file pointers.
 type fileList []*identifier.FileData
+
+// resultList is a slice of structured AI description result pointers.
 type resultList []*identifier.AIResultStruct
+
+// folderT represents folder context constructed for LLM appraisal, containing file counts,
+// sampled file excerpts, subfolder lists, and the folder path.
 type folderT struct {
 	NumberOfFiles int
 	FileExcerpt   fileList
@@ -37,6 +43,7 @@ type folderT struct {
 	FolderName    string
 }
 
+// maxExcerpts limits the number of file excerpts sent to the LLM to num items using random sampling.
 func (f *folderT) maxExcerpts(num int) {
 	if num > len(f.FileExcerpt) {
 		return
@@ -48,14 +55,23 @@ func (f *folderT) maxExcerpts(num int) {
 	return
 }
 
+// aiCmd generates structured semantic archival descriptions (title, description, dates, places, persons, institutions)
+// for folders by submitting structured prompts with folder hierarchy and file excerpts to LLMs via Firebase Genkit.
 var aiCmd = &cobra.Command{
 	Use:     "ai",
 	Aliases: []string{},
 	Short:   "retrieves AI descriptions",
-	Long:    `retrieves AI descriptions`,
-	Example: ``,
-	Args:    cobra.NoArgs,
-	Run:     doAi,
+	Long: `Retrieves AI descriptions for indexed folders using Firebase Genkit.
+Constructs folder hierarchies and file excerpts from the BadgerDB index and submits them to supported LLM providers
+(Google Gemini, OpenAI, or CEDA LiteLLM). Stores generated descriptions in BadgerDB under model-specific keys ("ai:<model>:<folder>")
+and exports results to CSV, JSONL, XLSX, and console.`,
+	Example: `Generate AI descriptions using Google Gemini:
+` + appname + ` ai --database C:/temp/live --model "googleai/gemini-2.5-flash" --apikey "%%GEMINI_API_KEY%%" --jsonl C:/temp/ai.jsonl --csv C:/temp/ai.csv --xlsx C:/temp/ai.xlsx --console
+
+Generate AI descriptions using CEDA LiteLLM:
+` + appname + ` ai --database C:/temp/live --model "ceda/gpt-4o" --apikey "%%CEDA_API_KEY%%" --jsonl C:/temp/ai.jsonl`,
+	Args: cobra.NoArgs,
+	Run:  doAi,
 }
 
 var dbFolderAIFlag string
@@ -72,18 +88,18 @@ var aiResultFolder int64
 var aiMaxFiles int64
 
 func aiInit() {
-	aiCmd.Flags().StringVar(&dbFolderAIFlag, "database", "", "folder for database (must already exist)")
-	aiCmd.Flags().StringVar(&prefixAIFlag, "prefix", "", "folder path prefix")
-	aiCmd.Flags().StringVar(&csvAIFlag, "csv", "", "write ai to csv file")
-	aiCmd.Flags().StringVar(&jsonlAIFlag, "jsonl", "", "write ai to jsonl file")
-	aiCmd.Flags().StringVar(&xlsxAIFlag, "xlsx", "", "write ai to xlsx file (needs memory)")
-	aiCmd.Flags().BoolVar(&consoleAIFlag, "console", false, "write ai to console")
-	aiCmd.Flags().StringVar(&modelAIFlag, "model", "googleai/gemini-2.5-flash", "model for ai")
-	aiCmd.Flags().StringVar(&apikeyAIFlag, "apikey", "%%GEMINI_API_KEY%%", "apikey for ai")
-	aiCmd.Flags().StringVar(&aiQuery, "query", "", "query for ai")
-	aiCmd.Flags().Int64Var(&aiResultFolder, "result-folder", 50, "folder number for result, if 0, all folders are used")
-	aiCmd.Flags().Int64Var(&aiMaxFiles, "max-files", 8, "maximum number of files per folder")
-	aiCmd.Flags().StringVar(&aiAdditionalQuery, "additional-query", "", "additional query for ai, will be prepended to the main query")
+	aiCmd.Flags().StringVar(&dbFolderAIFlag, "database", "", "folder for Badger database storage (must already exist)")
+	aiCmd.Flags().StringVar(&prefixAIFlag, "prefix", "", "folder path prefix filter")
+	aiCmd.Flags().StringVar(&csvAIFlag, "csv", "", "write AI descriptions to CSV file")
+	aiCmd.Flags().StringVar(&jsonlAIFlag, "jsonl", "", "write AI descriptions to JSONL file")
+	aiCmd.Flags().StringVar(&xlsxAIFlag, "xlsx", "", "write AI descriptions to Excel XLSX file")
+	aiCmd.Flags().BoolVar(&consoleAIFlag, "console", false, "print AI descriptions to console")
+	aiCmd.Flags().StringVar(&modelAIFlag, "model", "googleai/gemini-2.5-flash", "LLM model provider and model name ('provider/model', e.g. 'googleai/gemini-2.5-flash', 'openai/gpt-4o', 'ceda/...')")
+	aiCmd.Flags().StringVar(&apikeyAIFlag, "apikey", "%%GEMINI_API_KEY%%", "API key for LLM provider (supports %%ENV_VAR%% syntax)")
+	aiCmd.Flags().StringVar(&aiQuery, "query", "", "custom prompt query string or path to prompt text file")
+	aiCmd.Flags().Int64Var(&aiResultFolder, "result-folder", 50, "batch size of folders sent per LLM request (0 = all)")
+	aiCmd.Flags().Int64Var(&aiMaxFiles, "max-files", 8, "maximum number of sampled file excerpts per folder")
+	aiCmd.Flags().StringVar(&aiAdditionalQuery, "additional-query", "", "additional prompt instructions prepended to the main query (string or file path)")
 	aiCmd.MarkFlagDirname("database")
 	aiCmd.MarkFlagRequired("database")
 	aiCmd.MarkFlagFilename("jsonl", "jsonl", "json")

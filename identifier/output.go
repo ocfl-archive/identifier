@@ -12,6 +12,9 @@ import (
 	"github.com/tealeg/xlsx/v3"
 )
 
+// NewOutput initializes a unified multi-format output handler.
+// Depending on the provided paths and flags, it can simultaneously write tabular
+// and structured data to CSV, JSON Lines (JSONL), Microsoft Excel (XLSX), and the console.
 func NewOutput(console bool, csvPath string, jsonlPath string, xlsxPath string, name string, fields []string, logger zLogger.ZLogger) (*Output, error) {
 	var err error
 	output := &Output{console: console, fields: fields}
@@ -65,6 +68,7 @@ func NewOutput(console bool, csvPath string, jsonlPath string, xlsxPath string, 
 	return output, nil
 }
 
+// Output manages writers for multiple concurrent output destinations (CSV, JSONL, XLSX, Console).
 type Output struct {
 	csvFile      *os.File
 	csvWriter    *csv.Writer
@@ -76,6 +80,7 @@ type Output struct {
 	fields       []string
 }
 
+// Close flushes all buffered writers and closes open output files, saving any pending XLSX workbook.
 func (o *Output) Close() error {
 	var errs = []error{}
 	if o.csvWriter != nil {
@@ -99,6 +104,7 @@ func (o *Output) Close() error {
 	return errors.Combine(errs...)
 }
 
+// WriteCSV writes an ordered slice of values as a single CSV row.
 func (o *Output) WriteCSV(record []any) error {
 	if o.csvWriter != nil {
 		strs := make([]string, len(record))
@@ -110,6 +116,7 @@ func (o *Output) WriteCSV(record []any) error {
 	return nil
 }
 
+// WriteJSONL serializes the arbitrary data object as a single JSON line.
 func (o *Output) WriteJSONL(data any) error {
 	if o.jsonlFile != nil {
 		return errors.WithStack(json.NewEncoder(o.jsonlFile).Encode(data))
@@ -117,6 +124,7 @@ func (o *Output) WriteJSONL(data any) error {
 	return nil
 }
 
+// WriteXLSX appends a row with properly typed cells (string, int, float, timestamp) to the active XLSX sheet.
 func (o *Output) WriteXLSX(record []any) error {
 	if o.sheet != nil {
 		row := o.sheet.AddRow()
@@ -141,6 +149,7 @@ func (o *Output) WriteXLSX(record []any) error {
 	return nil
 }
 
+// WriteConsole formats and prints the record fields to standard output if console logging is active.
 func (o *Output) WriteConsole(record []any) error {
 	if o.console {
 		if len(o.fields) != len(record) {
@@ -154,6 +163,8 @@ func (o *Output) WriteConsole(record []any) error {
 	return nil
 }
 
+// Write simultaneously dispatches tabular record data to CSV, XLSX, and Console,
+// and the structured object data to JSONL.
 func (o *Output) Write(record []any, data any) error {
 	var errs = []error{}
 	if err := o.WriteCSV(record); err != nil {

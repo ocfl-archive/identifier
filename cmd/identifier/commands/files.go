@@ -14,32 +14,20 @@ import (
 var filesRemoveFlag bool
 var filesRegexpFlag string
 
+// filesCmd matches and lists files in a directory hierarchy according to regular expressions, with optional deletion.
 var filesCmd = &cobra.Command{
 	Use:     "files [path to data]",
 	Aliases: []string{},
 	Short:   "list files based on go regular expression (with remove option)",
-	Long: `list files based on go regular expression (https://pkg.go.dev/regexp/syntax)
-There is an option to remove the files from filesystem.
+	Long: `List files based on Go regular expression syntax (https://pkg.go.dev/regexp/syntax).
+Provides an optional --remove flag to delete matched files directly from the filesystem.
 
-Caveat: dry-run (no --remove flag) is always recommended before removing files from filesystem.
-`,
-	Example: `find all files with extension '.jpg' and '.gif' and remove them
-
+Caveat: dry-run (omitting --remove) is always recommended before executing file deletion.`,
+	Example: `find all files with extension '.jpg' and '.gif' and remove them:
 ` + appname + ` files C:/daten/aiptest --regexp "\.(jpg|gif)$" --remove
-2025-03-12T11:36:12+01:00 INF working on folder 'C:/daten/aiptest0' timestamp="2025-03-12 11:36:12.2337424 +0100 CET m=+0.299511801"
-payload/image/IMG_6914.gif
-2025-03-12T11:36:12+01:00 INF removing 'C:\daten\aiptest0\payload\image\IMG_6914.gif' timestamp="2025-03-12 11:36:12.2337424 +0100 CET m=+0.299511801"
-payload/image/IMG_6914.jpg
-2025-03-12T11:36:12+01:00 INF removing 'C:\daten\aiptest0\payload\image\IMG_6914.jpg' timestamp="2025-03-12 11:36:12.2337424 +0100 CET m=+0.299511801"
 
-
-list all files starting with '.' and having more than 3 characters in name
-
-` + appname + ` files C:/daten/aiptest --regexp "^\..." 
-2025-03-12T11:29:41+01:00 INF dry-run: no files will be removed timestamp="2025-03-12 11:29:41.4411178 +0100 CET m=+0.228291601"
-2025-03-12T11:29:41+01:00 INF working on folder 'C:/daten/aiptest' timestamp="2025-03-12 11:29:41.4411178 +0100 CET m=+0.228291601"
-payload/image/.image.txt
-payload/test[0]/.test{3}.txt`,
+list all files starting with '.' (e.g. hidden or AppleDouble files):
+` + appname + ` files C:/daten/aiptest --regexp "^\."`,
 	Args: cobra.ExactArgs(1),
 	Run:  dofiles,
 }
@@ -47,7 +35,7 @@ payload/test[0]/.test{3}.txt`,
 func filesInit() {
 	filesCmd.Flags().StringVar(&filesRegexpFlag, "regexp", "", "[required] regular expression to match files")
 	filesCmd.MarkFlagRequired("regexp")
-	filesCmd.Flags().BoolVar(&filesRemoveFlag, "remove", false, "removes (deletes) the files from filesystem (if not set it's just a dry run)")
+	filesCmd.Flags().BoolVar(&filesRemoveFlag, "remove", false, "removes (deletes) matching files from filesystem (if omitted, performs a dry-run list)")
 }
 
 func dofiles(cmd *cobra.Command, args []string) {

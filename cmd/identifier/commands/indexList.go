@@ -25,28 +25,35 @@ var consoleIndexListFlag bool
 
 var fieldsIndexList = []string{"path", "folder", "basename", "size", "lastmod", "duplicate", "mimetype", "pronom", "type", "subtype", "checksum", "width", "height", "duration"}
 
+// indexListCmd queries the Badger database index for files matching specific criteria (empty files,
+// duplicates, regex patterns, or path prefix) and outputs reports or deletes matched files.
 var indexListCmd = &cobra.Command{
 	Use:     "list [path to data]",
 	Aliases: []string{},
 	Short:   "get technical metadata from database",
-	Long: `get technical metadata from database
-`,
-	Example: ``,
-	Args:    cobra.MaximumNArgs(1),
-	Run:     doindexList,
+	Long: `Get technical metadata from database.
+Filters stored file index records by duplicates, empty files, or regular expression patterns.
+Optionally deletes matching files from disk and removes their entries from the database when --remove is specified.`,
+	Example: `List duplicate files from BadgerDB:
+` + appname + ` index list --database C:/temp/live --duplicates --console
+
+Export technical metadata of files matching regex to CSV/JSONL:
+` + appname + ` index list --database C:/temp/live --regexp "\.pdf$" --csv C:/temp/pdfs.csv --jsonl C:/temp/pdfs.jsonl`,
+	Args: cobra.MaximumNArgs(1),
+	Run:  doindexList,
 }
 
 func indexListInit() {
-	indexListCmd.Flags().StringVar(&dbFolderIndexListFlag, "database", "", "folder for database (must already exist)")
-	indexListCmd.Flags().StringVar(&csvIndexListFlag, "csv", "", "write indexList to csv file")
-	indexListCmd.Flags().StringVar(&jsonlIndexListFlag, "jsonl", "", "write indexList to jsonl file")
-	indexListCmd.Flags().StringVar(&xlsxIndexListFlag, "xlsx", "", "write indexList to xlsx file (needs memory)")
-	indexListCmd.Flags().BoolVar(&emptyIndexListFlag, "empty", false, "include empty files")
-	indexListCmd.Flags().StringVar(&regexpIndexListFlag, "regexp", "", "include files matching regular expression")
-	indexListCmd.Flags().BoolVar(&duplicatesIndexListFlag, "duplicates", false, "include duplicate files")
-	indexListCmd.Flags().StringVar(&prefixIndexListFlag, "prefix", "", "folder path prefix")
-	indexListCmd.Flags().BoolVar(&removeIndexListFlag, "remove", false, "remove included files - requires at least one of empty, duplicate or regexp flag")
-	indexListCmd.Flags().BoolVar(&consoleIndexListFlag, "console", false, "write index to console")
+	indexListCmd.Flags().StringVar(&dbFolderIndexListFlag, "database", "", "folder for Badger database storage (must already exist)")
+	indexListCmd.Flags().StringVar(&csvIndexListFlag, "csv", "", "write filtered index records to CSV file")
+	indexListCmd.Flags().StringVar(&jsonlIndexListFlag, "jsonl", "", "write filtered index records to JSONL file")
+	indexListCmd.Flags().StringVar(&xlsxIndexListFlag, "xlsx", "", "write filtered index records to Excel XLSX file")
+	indexListCmd.Flags().BoolVar(&emptyIndexListFlag, "empty", false, "filter for empty files (size == 0)")
+	indexListCmd.Flags().StringVar(&regexpIndexListFlag, "regexp", "", "filter files whose basename matches regular expression")
+	indexListCmd.Flags().BoolVar(&duplicatesIndexListFlag, "duplicates", false, "filter for duplicate files (matching SHA-512 checksum)")
+	indexListCmd.Flags().StringVar(&prefixIndexListFlag, "prefix", "", "filter files by folder path prefix")
+	indexListCmd.Flags().BoolVar(&removeIndexListFlag, "remove", false, "remove matched files from filesystem and database (requires data path argument)")
+	indexListCmd.Flags().BoolVar(&consoleIndexListFlag, "console", false, "print matched file metadata to console")
 	indexListCmd.MarkFlagRequired("database")
 }
 

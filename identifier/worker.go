@@ -26,6 +26,7 @@ import (
 
 var serialWriterLock sync.Mutex
 
+// JsonlWriteLine thread-safely writes a FileData record as a JSON-encoded line to w.
 func JsonlWriteLine(w io.Writer, fData *FileData) error {
 	d, err := json.Marshal(fData)
 	if err != nil {
@@ -41,6 +42,7 @@ func JsonlWriteLine(w io.Writer, fData *FileData) error {
 
 var xlsxWriterLock sync.Mutex
 
+// XlsxWriteLine thread-safely appends a FileData record to an Excel spreadsheet.
 func XlsxWriteLine(sheet *xlsx.Sheet, fData *FileData) error {
 	csvWriterlock.Lock()
 	defer csvWriterlock.Unlock()
@@ -82,6 +84,7 @@ func XlsxWriteLine(sheet *xlsx.Sheet, fData *FileData) error {
 
 var csvWriterlock sync.Mutex
 
+// CsvWriteLine thread-safely writes a FileData record to a CSV writer.
 func CsvWriteLine(csvWriter *csv.Writer, fData *FileData) error {
 	dupStr := "no"
 	if fData.Duplicate {
@@ -108,6 +111,7 @@ func CsvWriteLine(csvWriter *csv.Writer, fData *FileData) error {
 		}))
 }
 
+// WriteLogger logs technical metadata extraction details to the structured logger.
 func WriteLogger(logger zLogger.ZLogger, fData *FileData, id uint, basePath string, cached bool) {
 	logger.Info().
 		Bool("cached", cached).
@@ -132,6 +136,7 @@ func WriteLogger(logger zLogger.ZLogger, fData *FileData, id uint, basePath stri
 	}
 }
 
+// WriteConsole prints a compact technical metadata summary line to standard output.
 func WriteConsole(logger zLogger.ZLogger, fData *FileData) {
 	fmt.Printf("'%s' - %s\n           [%s - %s] %s\n", fData.Path, fData.Indexer.Checksum[string(checksum.DigestSHA512)], fData.Indexer.Pronom, fData.Indexer.Mimetype, human.Bytes(uint64(fData.Size)))
 	if fData.Indexer.Type == "image" && fData.Indexer.Width > 0 {
@@ -142,6 +147,7 @@ func WriteConsole(logger zLogger.ZLogger, fData *FileData) {
 var hashes = []string{}
 var hashLock sync.Mutex
 
+// isDup checks if a checksum has already been seen; if seen, returns true; otherwise records it in sorted slice and returns false.
 func isDup(t string) bool {
 	hashLock.Lock()
 	defer hashLock.Unlock()
@@ -156,6 +162,10 @@ func isDup(t string) bool {
 	return false
 }
 
+// Worker processes incoming file indexing jobs from the jobs channel.
+// It checks the Badger cache for valid existing metadata (matching file size and modification time),
+// invokes the external indexer tools if uncached or modified, detects duplicates by SHA-512 checksum,
+// updates the Badger database, and sends completion messages to the results channel.
 func Worker(id uint, fsys fs.FS, actions []string, idx *util.Indexer, logger zLogger.ZLogger, jobs <-chan string, results chan<- string, badgerDB *badger.DB, startTime int64, waiter *sync.WaitGroup) {
 	for path := range jobs {
 		finfo, err := fs.Stat(fsys, path)
@@ -274,6 +284,8 @@ func Worker(id uint, fsys fs.FS, actions []string, idx *util.Indexer, logger zLo
 	}
 }
 
+// IterateBadger iterates over stored file records in BadgerDB, applies the filter predicate `hit`,
+// outputs matched records to requested targets (JSONL, CSV, XLSX, Console), and optionally deletes removed files.
 func IterateBadger(logger zLogger.ZLogger, emptyFlag bool, duplicateFlag bool, removeFlag bool, regex *regexp.Regexp, jsonlWriter *os.File, csvWriter *csv.Writer, sheet *xlsx.Sheet, console bool, badgerDB *badger.DB, hit func(fData *FileData) bool) error {
 	var removeList = [][]byte{}
 	if err := badgerDB.View(func(txn *badger.Txn) error {
@@ -291,8 +303,6 @@ func IterateBadger(logger zLogger.ZLogger, emptyFlag bool, duplicateFlag bool, r
 				if err := json.Unmarshal(v, fData); err != nil {
 					return errors.Wrapf(err, "cannot unmarshal value")
 				}
-				/*
-				 */
 				if hit(fData) {
 					logger.Info().Msgf("found %s", fData.Path)
 					if jsonlWriter != nil {

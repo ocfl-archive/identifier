@@ -14,40 +14,29 @@ import (
 var foldersRemoveFlag bool
 var foldersRegexpFlag string
 
+// foldersCmd lists matching directories and their contents based on regular expressions, with optional recursive deletion.
 var foldersCmd = &cobra.Command{
 	Use:     "folders [path to data]",
 	Aliases: []string{},
 	Short:   "list folders including files and subfolders based on go regular expression (with remove option)",
-	Long: `list folders including files and subfolders based on go regular expression (https://pkg.go.dev/regexp/syntax)
-If there are multiple folders in one hierarchy matching the regular expression, only the first one with lowest depth will be listed, which inherently includes the rest.
-There is an option to remove the folders including files and subfolders from filesystem.
+	Long: `List folders including files and subfolders based on Go regular expression syntax (https://pkg.go.dev/regexp/syntax).
+If multiple nested folders match, only the topmost matching ancestor is returned (which encompasses all children).
+Provides an optional --remove flag to recursively delete matching directories from the filesystem.
 
-Caveat: dry-run (no --remove flag) is always recommended before removing files from filesystem.
-`,
-	Example: `Find all folders with more or equal 8 characters in name
-
+Caveat: dry-run (omitting --remove) is always recommended before executing directory deletion.`,
+	Example: `Find all folders with 8 or more characters in their name:
 ` + appname + ` folders C:/daten/aiptest --regexp ".{8,}"
-2025-03-12T12:18:02+01:00 INF dry-run: no files will be removed timestamp="2025-03-12 12:18:02.2662753 +0100 CET m=+0.164232301"
-2025-03-12T12:18:02+01:00 INF working on folder 'C:/daten/aiptest0' timestamp="2025-03-12 12:18:02.2662753 +0100 CET m=+0.164232301"
-2025-03-12T12:18:02+01:00 INF using regexp ".{8,}" timestamp="2025-03-12 12:18:02.2662753 +0100 CET m=+0.164232301"
-payload/#1    audio
-payload/empty folder
 
-list all folders starting with 'empty' and remove them
-
-` + appname + ` folders C:/daten/aiptest --regexp "^empty" --remove
-2025-03-12T12:22:07+01:00 INF working on folder 'C:/daten/aiptest0' timestamp="2025-03-12 12:22:07.4433671 +0100 CET m=+0.113916501"
-2025-03-12T12:22:07+01:00 INF using regexp "^empty" timestamp="2025-03-12 12:22:07.4433671 +0100 CET m=+0.113916501"
-payload/empty folder
-2025-03-12T12:22:07+01:00 INF removing 'C:\daten\aiptest0\payload\empty folder' timestamp="2025-03-12 12:22:07.4433671 +0100 CET m=+0.113916501"`,
+Find and recursively delete all folders starting with 'empty':
+` + appname + ` folders C:/daten/aiptest --regexp "^empty" --remove`,
 	Args: cobra.ExactArgs(1),
 	Run:  dofolders,
 }
 
 func foldersInit() {
-	foldersCmd.Flags().StringVar(&foldersRegexpFlag, "regexp", "", "[required] regular expression to match files")
+	foldersCmd.Flags().StringVar(&foldersRegexpFlag, "regexp", "", "[required] regular expression to match folders")
 	foldersCmd.MarkFlagRequired("regexp")
-	foldersCmd.Flags().BoolVar(&foldersRemoveFlag, "remove", false, "removes (deletes) the folders including files and subfolders from filesystem (if not set it's just a dry run)")
+	foldersCmd.Flags().BoolVar(&foldersRemoveFlag, "remove", false, "removes (deletes) the matching folders and all contents from filesystem (if omitted, performs a dry-run list)")
 }
 
 func dofolders(cmd *cobra.Command, args []string) {
