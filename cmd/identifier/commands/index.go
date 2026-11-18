@@ -69,6 +69,7 @@ func indexInit() {
 }
 
 func doIndex(cmd *cobra.Command, args []string) {
+	identifier.ResetHashes()
 	if len(args) == 0 && dbFolderFlag == "" {
 		logger.Error().Msg("either data path or database folder must be set")
 		_ = cmd.Help()

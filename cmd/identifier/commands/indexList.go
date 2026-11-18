@@ -127,7 +127,7 @@ func doindexList(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	if err := badgerIterator.IterateIndex(prefixIndexFolderFlag, func(fData *identifier.FileData) (remove bool, err error) {
+	if err := badgerIterator.IterateIndex(prefixIndexListFlag, func(fData *identifier.FileData) (remove bool, err error) {
 		if fData.Basename == "" || fData.Indexer == nil {
 			return false, nil
 		}

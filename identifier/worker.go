@@ -147,6 +147,13 @@ func WriteConsole(logger zLogger.ZLogger, fData *FileData) {
 var hashes = []string{}
 var hashLock sync.Mutex
 
+// ResetHashes clears the list of tracked checksums used for duplicate detection.
+func ResetHashes() {
+	hashLock.Lock()
+	defer hashLock.Unlock()
+	hashes = []string{}
+}
+
 // isDup checks if a checksum has already been seen; if seen, returns true; otherwise records it in sorted slice and returns false.
 func isDup(t string) bool {
 	hashLock.Lock()
