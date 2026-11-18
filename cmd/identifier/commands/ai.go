@@ -25,7 +25,7 @@ import (
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
+	"maps"
 )
 
 // fileList is a slice of indexed file pointers.
@@ -324,7 +324,7 @@ Sprache ist Englisch und der Duktus wissenschaftlich. Achte darauf, dass das JSO
 		defer os.Exit(1)
 		return
 	}
-	folderList0 := maps.Keys(folderList)
+	folderList0 := slices.Collect(maps.Keys(folderList))
 	logger.Info().Msgf("writing %d folders to csv", len(folderList0))
 	last := int64(len(folderList0))/aiResultFolder + 1
 	for i := int64(0); i < last; i++ {

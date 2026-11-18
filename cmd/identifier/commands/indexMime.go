@@ -1,12 +1,8 @@
 package commands
 
 import (
-	"fmt"
 	"os"
-	"regexp"
 
-	"github.com/dustin/go-humanize"
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
 )
@@ -54,30 +50,9 @@ func indexMimeInit() {
 }
 
 func doindexMime(cmd *cobra.Command, args []string) {
-	var err error
+	regex := CompileRegexOrExit(regexpIndexMimeFlag)
+	LogFilterSummary(emptyIndexMimeFlag, duplicatesIndexMimeFlag, regexpIndexMimeFlag, prefixIndexMimeFlag)
 
-	var regex *regexp.Regexp
-	if regexpIndexMimeFlag != "" {
-		regex, err = regexp.Compile(regexpIndexMimeFlag)
-		if err != nil {
-			logger.Error().Err(err).Msgf("cannot compile regular expression '%s'", regexpIndexMimeFlag)
-			defer os.Exit(1)
-			return
-		}
-		fmt.Printf("#including regexp \"%s\"\n", regexpIndexMimeFlag)
-	}
-	if emptyIndexMimeFlag {
-		fmt.Println("#including empty files")
-	}
-	if duplicatesIndexMimeFlag {
-		fmt.Println("#including duplicate files")
-	}
-	if prefixIndexMimeFlag != "" {
-		fmt.Printf("#including prefix \"%s\"\n", prefixIndexMimeFlag)
-	}
-	if !emptyIndexMimeFlag && !duplicatesIndexMimeFlag && regexpIndexMimeFlag == "" {
-		fmt.Println("#including all files")
-	}
 	output, err := identifier.NewOutput(consoleIndexMimeFlag || (csvIndexMimeFlag == "" && jsonlIndexMimeFlag == "" && xlsxIndexMimeFlag == ""), csvIndexMimeFlag, jsonlIndexMimeFlag, xlsxIndexMimeFlag, "list", fieldsIndexMime, logger)
 	if err != nil {
 		logger.Error().Err(err).Msg("cannot create output")
@@ -102,55 +77,20 @@ func doindexMime(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	var statSize = map[string]int64{}
-	var statCount = map[string]int64{}
-	if err := badgerIterator.IterateIndex(prefixIndexMimeFlag, func(fData *identifier.FileData) (remove bool, err error) {
-		if fData.Basename == "" || fData.Indexer == nil {
-			return false, nil
-		}
-		var hit bool
-		hit = (emptyIndexMimeFlag && fData.Size == 0) ||
-			(duplicatesIndexMimeFlag && fData.Duplicate) ||
-			(regex != nil && regex.MatchString(fData.Basename)) ||
-			(!emptyIndexMimeFlag && !duplicatesIndexMimeFlag && regex == nil)
-		if hit {
-			if _, ok := statSize[fData.Indexer.Mimetype]; !ok {
-				statSize[fData.Indexer.Mimetype] = 0
-				statCount[fData.Indexer.Mimetype] = 0
-			}
-			statSize[fData.Indexer.Mimetype] += fData.Size
-			statCount[fData.Indexer.Mimetype]++
-		}
-		return false, nil
-	}); err != nil {
+	filter := identifier.BuildFileFilter(emptyIndexMimeFlag, duplicatesIndexMimeFlag, regex)
+	stats, err := AggregateFileData(badgerIterator, prefixIndexMimeFlag, filter, func(fData *identifier.FileData) string {
+		return fData.Indexer.Mimetype
+	})
+	if err != nil {
 		logger.Error().Err(err).Msg("cannot iterate badger")
 	}
-	tw := table.NewWriter()
-	header := table.Row{}
-	for _, field := range fieldsIndexMime {
-		header = append(header, field)
-	}
-	tw.AppendHeader(header)
 
-	for mime, size := range statSize {
-		if err := output.Write([]any{
-			mime,
-			statCount[mime],
-			size,
-			humanize.Bytes(uint64(size)),
-		}, struct {
-			Mime  string
-			Size  int64
-			Count int64
-		}{Mime: mime, Size: size, Count: statCount[mime]}); err != nil {
-			logger.Error().Err(err).Msg("cannot write output")
-		}
-		tw.AppendRow(table.Row{mime, statCount[mime], size, humanize.Bytes(uint64(size))})
+	type jsonMime struct {
+		Mime  string
+		Size  int64
+		Count int64
 	}
-	tw.SetTitle("Mime statistics")
-	if consoleIndexMimeFlag {
-		fmt.Println(tw.Render())
-	}
-
-	return
+	OutputStats(stats, "Mime statistics", fieldsIndexMime, output, consoleIndexMimeFlag, func(rec *StatRecord) jsonMime {
+		return jsonMime{Mime: rec.Key, Size: rec.Size, Count: rec.Count}
+	})
 }

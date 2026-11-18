@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"emperror.dev/errors"
 	"github.com/je4/utils/v2/pkg/checksum"
@@ -78,28 +77,8 @@ func doindexList(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	var regex *regexp.Regexp
-	if regexpIndexListFlag != "" {
-		regex, err = regexp.Compile(regexpIndexListFlag)
-		if err != nil {
-			logger.Error().Err(err).Msgf("cannot compile regular expression '%s'", regexpIndexListFlag)
-			defer os.Exit(1)
-			return
-		}
-		fmt.Printf("#including regexp \"%s\"\n", regexpIndexListFlag)
-	}
-	if emptyIndexListFlag {
-		fmt.Println("#including empty files")
-	}
-	if duplicatesIndexListFlag {
-		fmt.Println("#including duplicate files")
-	}
-	if prefixIndexListFlag != "" {
-		fmt.Printf("#including prefix \"%s\"\n", prefixIndexListFlag)
-	}
-	if !emptyIndexListFlag && !duplicatesIndexListFlag && regexpIndexListFlag == "" {
-		fmt.Println("#including all files")
-	}
+	regex := CompileRegexOrExit(regexpIndexListFlag)
+	LogFilterSummary(emptyIndexListFlag, duplicatesIndexListFlag, regexpIndexListFlag, prefixIndexListFlag)
 	if removeIndexListFlag {
 		fmt.Println("#removing files")
 	}
@@ -127,45 +106,38 @@ func doindexList(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	filter := identifier.BuildFileFilter(emptyIndexListFlag, duplicatesIndexListFlag, regex)
 	if err := badgerIterator.IterateIndex(prefixIndexListFlag, func(fData *identifier.FileData) (remove bool, err error) {
-		if fData.Basename == "" || fData.Indexer == nil {
+		if !filter(fData) {
 			return false, nil
 		}
-
-		var hit bool
-		hit = (emptyIndexListFlag && fData.Size == 0) ||
-			(duplicatesIndexListFlag && fData.Duplicate) ||
-			(regex != nil && regex.MatchString(fData.Basename)) ||
-			(!emptyIndexListFlag && !duplicatesIndexListFlag && regex == nil)
-		if hit {
-			if err := output.Write([]any{
-				fData.Path,
-				fData.Folder,
-				fData.Basename,
-				fData.Size,
-				fData.LastMod,
-				fData.Duplicate,
-				fData.Indexer.Mimetype,
-				fData.Indexer.Pronom,
-				fData.Indexer.Type,
-				fData.Indexer.Subtype,
-				fData.Indexer.Checksum[string(checksum.DigestSHA512)],
-				fData.Indexer.Width,
-				fData.Indexer.Height,
-				fData.Indexer.Duration},
-				fData); err != nil {
-				return false, errors.Wrapf(err, "cannot write output")
-			}
-			if removeIndexListFlag {
-				fullpath := filepath.Join(dataPath, fData.Path)
-				logger.Info().Msgf("removing file '%s'", fullpath)
-				if err := os.Remove(fullpath); err != nil {
-					logger.Error().Err(err).Msgf("cannot remove file '%s'", fullpath)
-					// return false, errors.Wrapf(err, "cannot remove file '%s'", fData.Path)
-					return true, nil
-				}
+		if err := output.Write([]any{
+			fData.Path,
+			fData.Folder,
+			fData.Basename,
+			fData.Size,
+			fData.LastMod,
+			fData.Duplicate,
+			fData.Indexer.Mimetype,
+			fData.Indexer.Pronom,
+			fData.Indexer.Type,
+			fData.Indexer.Subtype,
+			fData.Indexer.Checksum[string(checksum.DigestSHA512)],
+			fData.Indexer.Width,
+			fData.Indexer.Height,
+			fData.Indexer.Duration},
+			fData); err != nil {
+			return false, errors.Wrapf(err, "cannot write output")
+		}
+		if removeIndexListFlag {
+			fullpath := filepath.Join(dataPath, fData.Path)
+			logger.Info().Msgf("removing file '%s'", fullpath)
+			if err := os.Remove(fullpath); err != nil {
+				logger.Error().Err(err).Msgf("cannot remove file '%s'", fullpath)
+				// return false, errors.Wrapf(err, "cannot remove file '%s'", fData.Path)
 				return true, nil
 			}
+			return true, nil
 		}
 		return false, nil
 	}); err != nil {

@@ -17,7 +17,7 @@ import (
 	"github.com/ocfl-archive/indexer/v3/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/tealeg/xlsx/v3"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 var dbFolderFlag string

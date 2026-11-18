@@ -10,7 +10,6 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/je4/utils/v2/pkg/zLogger"
-	"golang.org/x/exp/constraints"
 )
 
 // Regular expression rules used for file and folder name sanitization.
@@ -54,20 +53,6 @@ var (
 	// directCleanRulePrivateUse matches characters in the Unicode Private Use Area (PUA: U+E000 to U+F8FF).
 	directCleanRulePrivateUse = regexp.MustCompile("[\uE000-\uF8FF]")
 )
-
-func min[T constraints.Ordered](a, b T) T {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max[T constraints.Ordered](a, b T) T {
-	if a > b {
-		return a
-	}
-	return b
-}
 
 // encodeUTFCode converts a Unicode rune to an encoded string "=uXXXX".
 func encodeUTFCode(s string) string {

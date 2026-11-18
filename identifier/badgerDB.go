@@ -48,18 +48,19 @@ func (r *BadgerIterator) Close() error {
 	return nil
 }
 
-// IterateAI iterates over all AI metadata records whose keys match the given prefix
-// (e.g., "ai:<model>:"). The callback receives the unmarshaled AIResultStruct for each record.
+// IterateJSON iterates over all records whose keys match the given prefix,
+// deserializing each JSON value into a new instance of T.
+// The callback `do` receives the string key and a pointer to the unmarshaled entity T.
 // If the callback returns remove=true and the iterator is in read-write mode, the key will be deleted.
-func (r *BadgerIterator) IterateAI(prefix string, do func(key string, fData *AIResultStruct) (remove bool, err error)) error {
+func IterateJSON[T any](r *BadgerIterator, prefix string, do func(key string, entity *T) (remove bool, err error)) error {
 	if err := r.Iterate(prefix, func(key, value []byte) (remove bool, err error) {
-		fData := &AIResultStruct{}
-		if err := json.Unmarshal(value, fData); err != nil {
-			return false, errors.Wrapf(err, "cannot unmarshal data for key '%s': %s", string(key), string(value))
+		var entity T
+		if err := json.Unmarshal(value, &entity); err != nil {
+			return false, errors.Wrapf(err, "cannot unmarshal %T for key '%s': %s", entity, string(key), string(value))
 		}
-		remove, err = do(string(key), fData)
+		remove, err = do(string(key), &entity)
 		if err != nil {
-			return false, errors.Wrapf(err, "cannot iterate data for key '%s': %s", string(key), string(value))
+			return false, errors.Wrapf(err, "cannot iterate %T for key '%s': %s", entity, string(key), string(value))
 		}
 		return remove, nil
 	}); err != nil {
@@ -68,24 +69,20 @@ func (r *BadgerIterator) IterateAI(prefix string, do func(key string, fData *AIR
 	return nil
 }
 
+// IterateAI iterates over all AI metadata records whose keys match the given prefix
+// (e.g., "ai:<model>:"). The callback receives the unmarshaled AIResultStruct for each record.
+// If the callback returns remove=true and the iterator is in read-write mode, the key will be deleted.
+func (r *BadgerIterator) IterateAI(prefix string, do func(key string, fData *AIResultStruct) (remove bool, err error)) error {
+	return IterateJSON(r, prefix, do)
+}
+
 // IterateIndex iterates over all file index records whose keys match the given prefix
 // (e.g., "file:"). The callback receives the unmarshaled FileData for each record.
 // If the callback returns remove=true and the iterator is in read-write mode, the key will be deleted.
 func (r *BadgerIterator) IterateIndex(prefix string, do func(fData *FileData) (remove bool, err error)) error {
-	if err := r.Iterate(prefix, func(key, value []byte) (remove bool, err error) {
-		fData := &FileData{}
-		if err := json.Unmarshal(value, fData); err != nil {
-			return false, errors.Wrapf(err, "cannot unmarshal data for key '%s': %s", string(key), string(value))
-		}
-		remove, err = do(fData)
-		if err != nil {
-			return false, errors.Wrapf(err, "cannot iterate data for key '%s': %s", string(key), string(value))
-		}
-		return remove, nil
-	}); err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return IterateJSON(r, prefix, func(key string, entity *FileData) (remove bool, err error) {
+		return do(entity)
+	})
 }
 
 // Iterate performs a raw key-value scan across keys starting with prefix.

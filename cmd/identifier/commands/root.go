@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 	ublogger "gitlab.switch.ch/ub-unibas/go-ublogger/v2"
 	"go.ub.unibas.ch/cloud/certloader/v2/pkg/loader"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 var appname = "identifier"

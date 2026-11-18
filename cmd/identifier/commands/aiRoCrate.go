@@ -14,7 +14,7 @@ import (
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/identifier/identifier"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 // defaultRoCrate provides a baseline RO-Crate 1.1 JSON-LD template.

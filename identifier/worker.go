@@ -21,7 +21,7 @@ import (
 	"github.com/je4/utils/v2/pkg/zLogger"
 	"github.com/ocfl-archive/indexer/v3/pkg/util"
 	"github.com/tealeg/xlsx/v3"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 var serialWriterLock sync.Mutex

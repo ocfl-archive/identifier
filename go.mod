@@ -16,7 +16,6 @@ require (
 	github.com/tealeg/xlsx/v3 v3.3.13
 	gitlab.switch.ch/ub-unibas/go-ublogger/v2 v2.0.1
 	go.ub.unibas.ch/cloud/certloader/v2 v2.0.29
-	golang.org/x/exp v0.0.0-20261117202309-7a49493bfd90
 )
 
 require (
@@ -104,6 +103,7 @@ require (
 	go.ub.unibas.ch/cloud/minivaultclient v1.0.12 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
+	golang.org/x/exp v0.0.0-20261117202309-7a49493bfd90 // indirect
 	golang.org/x/image v0.48.0 // indirect
 	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
