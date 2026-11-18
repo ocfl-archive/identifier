@@ -167,8 +167,8 @@ type AIResultStruct struct {
     Place        string     `json:"place"`        // Location (e.g. "Basel, Switzerland")
     Date         string     `json:"date"`         // "1964", "1974 - 1984", "1973-05-13"
     Tags         []string   `json:"tags"`         // ["audio", "text", "image"]
-    Persons      []AIPerson `json:"persons"`      // [{"name": "Gruntz, George", "role": "Composer"}]
-    Institutions []string   `json:"institutions"` // ["NDR Bigband, Hamburg", "Basler Fasnacht"]
+    Persons      []AIPerson `json:"persons"`      // [{"name": "Miller, Alexander", "role": "Composer"}]
+    Institutions []string   `json:"institutions"` // ["Symphony Orchestra, City A", "Cultural Foundation"]
 }
 ```
 
@@ -180,8 +180,8 @@ For specialized collections (e.g. architectural archives, medieval manuscripts, 
 
 Create `estate_context.txt`:
 ```text
-Context: This estate belongs to the Swiss jazz musician and composer George Gruntz (1932–2013).
-Special focus: Identify concert locations, Basel Fasnacht compositions, and collaborating musicians.
+Context: This estate belongs to a 20th-century composer and conductor (1932–2013).
+Special focus: Identify concert locations, festival compositions, and collaborating musicians.
 ```
 
 Run with additional query:
@@ -211,7 +211,7 @@ Value: JSON-encoded AIResultStruct
 
 Example:
 ```
-ai:googleai/gemini-2.5-flash:5 GG Botschafter Jazz und Basler Fasnacht/1964 s Ohremyggeli
+ai:googleai/gemini-2.5-flash:Music Archive/1964 Festival March
 ```
 
 This namespacing allows you to run multiple models (e.g. compare Gemini 2.5 Flash against GPT-4o) within the same database without data collisions.
@@ -258,20 +258,20 @@ identifier ai list --database C:/data/db --prefix "Concerts" --console
     {
       "@id": ".",
       "@type": ["Dataset"],
-      "name": "Estate of George Gruntz",
+      "name": "Legacy Composer Estate",
       "hasPart": [
-        { "@id": "1964 s Ohremyggeli/" },
-        { "@id": "1967 Monster Jazz/" }
+        { "@id": "1964 Festival March/" },
+        { "@id": "1967 Concert Tour/" }
       ]
     },
     {
-      "@id": "1964 s Ohremyggeli/",
+      "@id": "1964 Festival March/",
       "@type": ["Dataset"],
-      "name": "1964 's Ohremyggeli' Fasnacht March Edition",
-      "description": "Sheet music, piano arrangements, and master audio recordings for the Basel Fasnacht march 's Ohremyggeli' composed by George Gruntz.",
+      "name": "1964 Festival March Edition",
+      "description": "Sheet music, piano arrangements, and master audio recordings for the festival march composed in 1964.",
       "datePublished": "1964",
       "contentLocation": "Basel, Switzerland",
-      "keywords": ["audio", "text", "sheet music", "Fasnacht"]
+      "keywords": ["audio", "text", "sheet music", "festival"]
     }
   ]
 }
@@ -291,13 +291,13 @@ If `ro-crate-metadata.json` does not exist in the collection root, `identifier` 
 
 ## 8. Practical Walkthrough & Real-World Example
 
-### Scenario: Processing a Jazz Composer Estate
+### Scenario: Processing a Composer's Legacy Estate
 
 #### Step 1: Initialize Database and Index Technical Metadata
 
 ```shell
-identifier index C:/data/gruntz_collection \
-  --database C:/data/gruntz_db \
+identifier index C:/data/estate_collection \
+  --database C:/data/estate_db \
   --concurrent 4
 ```
 
@@ -305,7 +305,7 @@ identifier index C:/data/gruntz_collection \
 
 ```shell
 identifier ai \
-  --database C:/data/gruntz_db \
+  --database C:/data/estate_db \
   --model "googleai/gemini-2.5-flash" \
   --apikey "%%GEMINI_API_KEY%%" \
   --console
@@ -314,21 +314,21 @@ identifier ai \
 #### Observed Output:
 
 ```
-folder: 1964 s Ohremyggeli
-title: 1964 Fasnacht Composition 's Ohremyggeli'
-description: Manuscript score, piano reductions, and audio recordings of the Basel Fasnacht march 's Ohremyggeli'.
+folder: 1964 Festival March
+title: 1964 Composition 'Festival March'
+description: Manuscript score, piano reductions, and audio recordings of the festival march.
 place: Basel, Switzerland
 date: 1964
 tags: audio; text
-persons: Gruntz, George (Composer) -- Oesch, Hans (Publisher)
-institutions: Fasnachts-Comité Basel
+persons: Miller, Alexander (Composer) -- Smith, Robert (Publisher)
+institutions: Cultural Committee Basel
 ```
 
 #### Step 3: Embed into RO-Crate
 
 ```shell
-identifier ai ro-crate C:/data/gruntz_collection \
-  --database C:/data/gruntz_db \
+identifier ai ro-crate C:/data/estate_collection \
+  --database C:/data/estate_db \
   --model "googleai/gemini-2.5-flash"
 ```
 
