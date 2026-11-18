@@ -1,7 +1,8 @@
 package identifier
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 
 	"emperror.dev/errors"
@@ -72,7 +73,7 @@ type RoCrateGraphElement struct {
 	About RoCrateGraph `json:"about,omitempty"`
 
 	// Extra preserves unknown or extension JSON-LD properties during unmarshaling and marshaling.
-	Extra map[string]json.RawMessage `json:"-"`
+	Extra map[string]jsontext.Value `json:"-"`
 }
 
 // String returns a human-readable identifier with name if available.
@@ -123,8 +124,8 @@ func (r *RoCrateGraphElement) UnmarshalJSON(data []byte) error {
 	}
 	*r = (RoCrateGraphElement)(*a)
 	if r.Extra == nil {
-		r.Extra = map[string]json.RawMessage{}
-		d := map[string]json.RawMessage{}
+		r.Extra = map[string]jsontext.Value{}
+		d := map[string]jsontext.Value{}
 		if err := json.Unmarshal(data, &d); err != nil {
 			return errors.Wrap(err, "cannot unmarshal RoCrateGraphElement extra")
 		}
@@ -158,7 +159,7 @@ func (r *RoCrateGraphElement) AddPart(id string, b bool) {
 // RoCrate represents a complete RO-Crate metadata document (ro-crate-metadata.json).
 type RoCrate struct {
 	// Context is the JSON-LD @context definition (usually "https://w3id.org/ro/crate/1.1/context").
-	Context json.RawMessage `json:"@context"`
+	Context jsontext.Value `json:"@context"`
 
 	// Graph contains all entities and contextual relationships in the RO-Crate.
 	Graph RoCrateGraph `json:"@graph"`

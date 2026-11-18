@@ -7,7 +7,7 @@ import (
 	_ "embed"
 	"emperror.dev/errors"
 	"encoding/csv"
-	"encoding/json"
+	"encoding/json/v2"
 	"flag"
 	"fmt"
 	"github.com/dgraph-io/badger/v4"

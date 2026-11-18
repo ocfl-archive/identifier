@@ -1,7 +1,7 @@
 package identifier
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"runtime"
 
 	"emperror.dev/errors"

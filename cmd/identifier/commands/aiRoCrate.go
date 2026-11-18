@@ -1,7 +1,8 @@
 package commands
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"net/url"
 	"os"
@@ -135,7 +136,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 		defer os.Exit(1)
 		return
 	}
-	if err := json.NewDecoder(fp).Decode(roCrate); err != nil {
+	if err := json.UnmarshalRead(fp, roCrate); err != nil {
 		fp.Close()
 		logger.Error().Err(err).Msgf("cannot decode '%s'", roCratePath)
 		defer os.Exit(1)
@@ -263,9 +264,7 @@ func doAIRoCrate(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer fp.Close()
-	jsonEnc := json.NewEncoder(fp)
-	jsonEnc.SetIndent("", "  ")
-	if err := jsonEnc.Encode(roCrate); err != nil {
+	if err := json.MarshalWrite(fp, roCrate, jsontext.WithIndent("  ")); err != nil {
 		logger.Error().Err(err).Msgf("cannot encode '%s'", roCratePath)
 		defer os.Exit(1)
 		return

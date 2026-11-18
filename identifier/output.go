@@ -2,7 +2,7 @@ package identifier
 
 import (
 	"encoding/csv"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"os"
 	"time"
@@ -119,7 +119,13 @@ func (o *Output) WriteCSV(record []any) error {
 // WriteJSONL serializes the arbitrary data object as a single JSON line.
 func (o *Output) WriteJSONL(data any) error {
 	if o.jsonlFile != nil {
-		return errors.WithStack(json.NewEncoder(o.jsonlFile).Encode(data))
+		dataBytes, err := json.Marshal(data)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		if _, err := o.jsonlFile.Write(append(dataBytes, '\n')); err != nil {
+			return errors.WithStack(err)
+		}
 	}
 	return nil
 }

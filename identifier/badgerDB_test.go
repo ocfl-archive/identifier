@@ -1,7 +1,7 @@
 package identifier
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"testing"
 
 	"github.com/dgraph-io/badger/v4"
