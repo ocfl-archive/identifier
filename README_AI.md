@@ -95,7 +95,7 @@ identifier ai --database C:/data/db --model "googleai/gemini-2.5-flash" --apikey
 
 ### From Technical Metadata to Semantic Context
 
-Before running `identifier ai`, `identifier index` scans the directory tree and populates BadgerDB with `file:<relative_path>` records containing `FileData`:
+Before running `identifier ai`, `identifier index` scans the directory tree using the [`ocfl-archive/indexer`](https://github.com/ocfl-archive/indexer/blob/master) library (see [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)) and populates BadgerDB with `file:<relative_path>` records containing `FileData`:
 - File size, modification time, last seen timestamp.
 - PRONOM format identifier and MIME type.
 - Media dimensions (width, height, duration).

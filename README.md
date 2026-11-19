@@ -42,7 +42,7 @@ When cultural heritage institutions, research repositories, and archives receive
    - Depth-first bottom-up renaming to resolve illegal characters, Unicode Private Use Area (PUA) codes, control characters, leading dots/tildes, and typographic quotes.
    - Pattern-based file and folder discovery and selective removal (e.g. `.DS_Store`, AppleDouble files, empty directories).
 2. **Technical Metadata Identification & Deduplication**:
-   - Multi-engine format identification powered by [Siegfried](https://www.itforarchivists.com/siegfried) (PRONOM IDs, MIME types), [FFprobe](https://ffmpeg.org/ffprobe.html) (audio/video durations, codecs), [ImageMagick](https://imagemagick.org) (image dimensions), [Apache Tika](https://tika.apache.org/), and XML/JSON validators.
+   - Multi-engine format identification powered by [indexer](https://github.com/ocfl-archive/indexer/blob/master) (integrating [Siegfried](https://www.itforarchivists.com/siegfried) for PRONOM IDs and MIME types, [FFprobe](https://ffmpeg.org/ffprobe.html) for audio/video durations and codecs, [ImageMagick](https://imagemagick.org) for image dimensions, [Apache Tika](https://tika.apache.org/), XML/JSON validators, and YARA-X; see [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)).
    - High-speed concurrent worker pools with SHA-512 cryptographic hashing and bit-level duplicate detection.
    - Embedded [BadgerDB](https://dgraph.io/docs/badger/) key-value caching for instant offline queries and statistical aggregations without rescanning disks.
 3. **AI-Assisted Appraisal & Archival Description ("Erschliessung")**:
@@ -91,7 +91,7 @@ go install github.com/ocfl-archive/identifier/cmd/identifier@latest
 
 ### External Dependencies
 
-For technical identification actions, `identifier` interacts with standard archival tools if configured:
+For technical identification actions, `identifier` interacts with standard archival tools via the [`ocfl-archive/indexer`](https://github.com/ocfl-archive/indexer/blob/master) engine. For setup and installation instructions for specific tools and actions, see the [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs):
 - **[Siegfried](https://www.itforarchivists.com/siegfried)** (recommended for PRONOM format identification)
 - **[FFprobe / FFmpeg](https://ffmpeg.org/)** (for audio/video duration and stream metadata)
 - **[ImageMagick](https://imagemagick.org)** (`identify` for image dimensions)
@@ -255,7 +255,7 @@ identifier folders C:/data --regexp "^(tmp|temp|__MACOSX)$" --remove
 
 ### `index` — Technical Metadata Extraction & Indexing
 
-Crawls the target directory, extracts technical metadata (Siegfried, FFprobe, ImageMagick, Tika), computes SHA-512 hashes, flags duplicates, and caches everything in BadgerDB.
+Crawls the target directory, extracts technical metadata using [indexer](https://github.com/ocfl-archive/indexer/blob/master) (Siegfried, FFprobe, ImageMagick, Tika, YARA-X; see [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)), computes SHA-512 hashes, flags duplicates, and caches everything in BadgerDB.
 
 ```shell
 identifier index <path-to-data> [flags]
@@ -264,7 +264,7 @@ identifier index <path-to-data> [flags]
 #### Flags:
 - `--database <dir>`: Directory path for persistent BadgerDB storage.
 - `--concurrent <n>`, `-n <n>`: Number of concurrent worker goroutines (default: `1`).
-- `--actions <list>`: Comma-separated list of indexer actions (default: `siegfried,xml,ffprobe,identify,json,tika`).
+- `--actions <list>`: Comma-separated list of indexer actions (default: `siegfried,xml,ffprobe,identify,json,tika`, can include `yarax`). For detailed information on available actions and their capabilities, consult the [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs).
 - `--csv <file>`: Output technical metadata to CSV file.
 - `--jsonl <file>`: Output technical metadata to JSON Lines file.
 - `--xlsx <file>`: Output technical metadata to Excel XLSX file.
@@ -443,6 +443,8 @@ Each line contains a standalone JSON object representing `FileData` or `AIResult
 
 A custom configuration file can be supplied via `--config <path.toml>`.
 
+The `[indexer]` section configures the underlying [`ocfl-archive/indexer`](https://github.com/ocfl-archive/indexer/blob/master) engine. For all available options and action configurations, refer to the [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs).
+
 Example configuration:
 
 ```toml
@@ -460,6 +462,13 @@ executable = "ffprobe"
 [indexer.identify]
 enabled = true
 executable = "magick"
+
+[indexer.yarax]
+enabled = false
+rulesfiles = ["/path/to/rules/*.yar"]
+fastscan = true
+timeout = "30s"
+maxmatchesperpattern = 100
 
 [log]
 level = "INFO"
@@ -480,6 +489,7 @@ namespace = "archive"
 - **[CLI Reference Guide](docs/CLI_REFERENCE.md)**: Exhaustive flag and command usage options.
 - **[Archival Workflow Guide](docs/WORKFLOW_GUIDE.md)**: Step-by-step tutorial for processing digital estates.
 - **[Architecture Guide](docs/ARCHITECTURE.md)**: Internal data structures, BadgerDB schemas, and Genkit flows.
+- **[Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)**: Documentation for the underlying metadata extraction engine, supported actions, and tools ([Repository](https://github.com/ocfl-archive/indexer/blob/master)).
 
 ---
 

@@ -10,7 +10,7 @@ require (
 	github.com/firebase/genkit/go v1.14.0
 	github.com/je4/utils/v2 v2.0.71
 	github.com/jedib0t/go-pretty/v6 v6.9.2
-	github.com/ocfl-archive/indexer/v3 v3.0.44
+	github.com/ocfl-archive/indexer/v3 v3.0.45
 	github.com/rs/zerolog v1.35.1
 	github.com/spf13/cobra v1.10.2
 	github.com/tealeg/xlsx/v3 v3.3.13
@@ -103,14 +103,14 @@ require (
 	go.ub.unibas.ch/cloud/minivaultclient v1.0.12 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
-	golang.org/x/exp v0.0.0-20261117202309-7a49493bfd90 // indirect
+	golang.org/x/exp v0.0.0-20261118215729-2791e4028fd4 // indirect
 	golang.org/x/image v0.48.0 // indirect
 	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
 	google.golang.org/api v0.316.0 // indirect
 	google.golang.org/genai v1.79.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261116203732-fd2c7689a808 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261118221215-c8830f628b3f // indirect
 	google.golang.org/grpc v1.85.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

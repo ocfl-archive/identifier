@@ -39,7 +39,7 @@ var indexCmd = &cobra.Command{
 	Aliases: []string{},
 	Short:   "retrieves technical metadata from files",
 	Long: `Retrieves technical metadata from files.
-Crawls the filesystem and runs configured indexer tools (Siegfried, FFprobe, ImageMagick identify, Apache Tika, XML/JSON validators).
+Crawls the filesystem and runs configured indexer tools (Siegfried, FFprobe, ImageMagick identify, Apache Tika, XML/JSON validators, YARA-X).
 Persistent results can be cached to a BadgerDB directory, which enables fast incremental re-indexing
 and instant offline statistics (folders, MIME types, PRONOM IDs, duplicates) without re-scanning.`,
 	Example: `Index a folder, write to BadgerDB cache, and export reports:

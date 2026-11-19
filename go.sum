@@ -114,6 +114,8 @@ github.com/ocfl-archive/error v1.0.5 h1:nPidx9HBSiViSDZHfVY8nIabBeOSO5vLFOcUMgt7
 github.com/ocfl-archive/error v1.0.5/go.mod h1:vOwIAdG34QlD9ExXUXu8QSywUKIIMN31ykQ2U0LvOMs=
 github.com/ocfl-archive/indexer/v3 v3.0.44 h1:JrSkHQ5xLnV7gq/0PKtDAXzyZaq1fMHzqlQ9yJ7UXVM=
 github.com/ocfl-archive/indexer/v3 v3.0.44/go.mod h1:gLVOsu6ZPeEyHCrbRF64hGYjrov0dBCg5oKiwYUxKUA=
+github.com/ocfl-archive/indexer/v3 v3.0.45 h1:AP2Gu4xx8wOjsMffOfOH60OaKb5lujOgUcFhma1+6Lw=
+github.com/ocfl-archive/indexer/v3 v3.0.45/go.mod h1:5IcXTBnYi3GEYPT8Gjd95ZSA7QHV8J6DWX4JeGBIQUw=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 h1:lDH9UUVJtmYCjyT0CI4q8xvlXPxeZ0gYCVvWbmPlp88=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
 github.com/openai/openai-go v1.12.0 h1:NBQCnXzqOTv5wsgNC36PrFEiskGfO5wccfCWDo9S1U0=
@@ -235,6 +237,7 @@ golang.org/x/crypto v0.59.0 h1:xS2jhqYbzNrpvkWP2YTDf4TJwBy3ykR03i8vFDxEc7c=
 golang.org/x/crypto v0.59.0/go.mod h1:veDyUwATGs3c+vN3VfTbzViMGXeTBk3WyhBOkn+F/4U=
 golang.org/x/exp v0.0.0-20261117202309-7a49493bfd90 h1:seq9hFRpNUkVX+6VxtoEsYZWhuZlf0K0euDqgZ5P41g=
 golang.org/x/exp v0.0.0-20261117202309-7a49493bfd90/go.mod h1:xeYMf2GfgE/gQmBtvdPsBN608YETsXuvoiEhaOxGg/w=
+golang.org/x/exp v0.0.0-20261118215729-2791e4028fd4/go.mod h1:xeYMf2GfgE/gQmBtvdPsBN608YETsXuvoiEhaOxGg/w=
 golang.org/x/image v0.48.0 h1:1AvuPcuoOTJpA7s4VZ5umrb90T3So0rkB/bSGmxkxik=
 golang.org/x/image v0.48.0/go.mod h1:mmtg64iqJKGqEgy+r13dfybl85tmxUd2lMnmaiSdWYY=
 golang.org/x/mod v0.43.0 h1:MFuq5J6s35W9D3IjkwyWc9vHh0nENOrt5K8Iof4ofmg=
@@ -266,6 +269,7 @@ google.golang.org/genproto/googleapis/api v0.0.0-20261012220534-4341edf3f941 h1:
 google.golang.org/genproto/googleapis/api v0.0.0-20261012220534-4341edf3f941/go.mod h1:AuGAdi9KnXss7xbLxIKhCvk+Ro/SxpET/iS45DNYN+M=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20261116203732-fd2c7689a808 h1:fTdQSdJnh58Hq9AG3truAGfWr7VEZ3tCU3DE5kDnTDE=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20261116203732-fd2c7689a808/go.mod h1:OaIUM3+LpYcK2GXM4FTmhWoIq371Owdr+Cc7/BsYHHc=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20261118221215-c8830f628b3f/go.mod h1:OaIUM3+LpYcK2GXM4FTmhWoIq371Owdr+Cc7/BsYHHc=
 google.golang.org/grpc v1.85.0 h1:BPBCfuVRQ1qvBhKDOq9uvQllMvO59rKsYhXpp7Dd8vw=
 google.golang.org/grpc v1.85.0/go.mod h1:0rQrOD58yjal/0EaVbGBANindixsCZNQPDV3VKtaKuQ=
 google.golang.org/protobuf v1.36.12 h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc=

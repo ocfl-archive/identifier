@@ -49,7 +49,7 @@ identifier folders /data/ingest --regexp "^__MACOSX$" --remove
 
 ## Step 2: Technical Indexing & BadgerDB Caching
 
-Run technical identification across all files in parallel using the embedded worker pool:
+Run technical identification across all files in parallel using the embedded worker pool (powered by [indexer](https://github.com/ocfl-archive/indexer/blob/master); see [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)):
 
 ```shell
 identifier index /data/ingest \
@@ -61,7 +61,7 @@ identifier index /data/ingest \
   --console
 ```
 
-The indexing phase computes SHA-512 cryptographic hashes, queries Siegfried for PRONOM IDs (`fmt/...`), inspects audio/video streams with FFprobe, and checks image dimensions with ImageMagick.
+The indexing phase computes SHA-512 cryptographic hashes, queries Siegfried for PRONOM IDs (`fmt/...`), inspects audio/video streams with FFprobe, and checks image dimensions with ImageMagick. For detailed configuration of each indexer tool and action, refer to the [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs).
 
 ---
 

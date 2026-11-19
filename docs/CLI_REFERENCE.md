@@ -13,7 +13,7 @@ The following flags can be passed to `identifier` or any of its subcommands:
 | `--config <path>` | string | `""` | Path to custom TOML configuration file. If omitted, uses embedded default configuration. |
 | `--log-file <path>` | string | `""` | File path to write structured logs. If omitted, logs to stderr. |
 | `--log-level <level>` | string | `"WARN"` | Log verbosity: `ERROR`, `WARN`, `INFO`, `DEBUG`. |
-| `--autoconfig` | bool | `false` | Enable automatic indexer performance optimization. |
+| `--autoconfig` | bool | `false` | Enable automatic indexer performance optimization (see [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)). |
 | `--show-config` | bool | `false` | Prints loaded configuration TOML to stdout and exits immediately. |
 | `-h`, `--help` | bool | `false` | Displays help message for command. |
 | `-v`, `--version` | bool | `false` | Displays build version and VCS commit revision. |
@@ -110,7 +110,7 @@ identifier folders /data/estate --regexp "^__MACOSX$" --remove
 
 ## 4. Technical Indexing: `identifier index`
 
-Recursively scans a directory, identifies technical metadata (Siegfried, FFprobe, ImageMagick, Tika), computes SHA-512 hashes, detects duplicates, caches records in BadgerDB, and produces tabular exports.
+Recursively scans a directory, identifies technical metadata via [indexer](https://github.com/ocfl-archive/indexer/blob/master) (Siegfried, FFprobe, ImageMagick, Tika, YARA-X; see [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)), computes SHA-512 hashes, detects duplicates, caches records in BadgerDB, and produces tabular exports.
 
 ### Syntax
 ```shell
@@ -123,7 +123,7 @@ identifier index <path-to-data> [flags]
 |---|---|---|---|
 | `--database <dir>` | string | `""` | BadgerDB directory path for persistent caching. |
 | `--concurrent <n>`, `-n <n>` | uint | `1` | Number of concurrent indexing worker goroutines. |
-| `--actions <list>` | string slice | `siegfried,xml,ffprobe,identify,json,tika` | Indexer actions to run. |
+| `--actions <list>` | string slice | `siegfried,xml,ffprobe,identify,json,tika` | Indexer actions to run (supports `siegfried`, `xml`, `ffprobe`, `identify`, `json`, `tika`, `yarax`, etc.; see [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)). |
 | `--csv <path>` | string | `""` | Export metadata table to CSV file. |
 | `--jsonl <path>` | string | `""` | Export metadata records to JSON Lines file. |
 | `--xlsx <path>` | string | `""` | Export metadata table to Excel XLSX workbook. |

@@ -18,7 +18,7 @@ graph TB
 
     subgraph Core["identifier Core Engine"]
         PathTree["pathElement Hierarchy Tree<br/>(Depth-First Traversals & Aggregation)"]
-        WorkerPool["Concurrent Index Worker Pool<br/>(SHA-512 & Format Actions)"]
+        WorkerPool["Concurrent Index Worker Pool<br/>(Powered by <a href='https://github.com/ocfl-archive/indexer/blob/master'>ocfl-archive/indexer</a>)"]
         MultiOut["Output Dispatcher<br/>(CSV, JSONL, XLSX, Console)"]
         RoCrateEngine["RO-Crate 1.1 JSON-LD Graph Engine"]
     end
@@ -57,7 +57,7 @@ graph TB
 
 ### 1. `FileData` (`identifier/structures.go`)
 
-Encapsulates complete filesystem attributes and technical characterization results for an individual file:
+Encapsulates complete filesystem attributes and technical characterization results for an individual file (incorporating `*indexer.ResultV2` from [`ocfl-archive/indexer`](https://github.com/ocfl-archive/indexer/blob/master); see the [Indexer Documentation](https://github.com/ocfl-archive/indexer/blob/master/docs)):
 
 ```go
 type FileData struct {
